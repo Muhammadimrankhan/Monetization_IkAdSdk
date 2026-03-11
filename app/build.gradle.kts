@@ -78,4 +78,13 @@ dependencies {
     //Text and Size-ing Libs
     implementation(libs.ssp.android)
     implementation(libs.sdp.android)
+
+    //liftoff mediation
+    implementation("com.google.ads.mediation:vungle:7.7.1.0")
+
+    // facebook
+    implementation("com.google.ads.mediation:facebook:6.21.0.1")
+
+    // mintegral mediation
+    implementation("com.google.ads.mediation:mintegral:17.0.91.0")
 }
