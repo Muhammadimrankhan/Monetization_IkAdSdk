@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-        val adsConfig = AdsConfig(
+     /*   val adsConfig = AdsConfig(
             FirebaseValue.allAppInterstitialAdCountChange,
             FirebaseValue.SPLASH_TIME,
             FirebaseValue.colorNativeCTR1,
@@ -63,6 +63,6 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
-        FetchConfig.initializeNetWorkId(networkConfig)
+        FetchConfig.initializeNetWorkId(networkConfig)*/
     }
 }
