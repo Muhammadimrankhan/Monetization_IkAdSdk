@@ -63,10 +63,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-process:2.10.0")
     implementation(libs.billing.ktx)
 
-    implementation(platform(libs.koin.bom))
-    implementation(libs.koin.core)
-    implementation(libs.koin.android)
-    implementation(libs.koin.compose)
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
@@ -78,13 +74,13 @@ dependencies {
     //Text and Size-ing Libs
     implementation(libs.ssp.android)
     implementation(libs.sdp.android)
-
-    //liftoff mediation
-    implementation("com.google.ads.mediation:vungle:7.7.1.0")
-
-    // facebook
-    implementation("com.google.ads.mediation:facebook:6.21.0.1")
-
-    // mintegral mediation
-    implementation("com.google.ads.mediation:mintegral:17.0.91.0")
+//
+//    //liftoff mediation
+//    implementation("com.google.ads.mediation:vungle:7.7.1.0")
+//
+//    // facebook
+//    implementation("com.google.ads.mediation:facebook:6.21.0.1")
+//
+//    // mintegral mediation
+//    implementation("com.google.ads.mediation:mintegral:17.0.91.0")
 }

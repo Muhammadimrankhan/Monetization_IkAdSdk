@@ -12,27 +12,41 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
-import com.monetization.ikadplugin.BuildConfig
 import com.monetization.ikadplugin.ads.AdKeys
 import com.monetization.ikadplugin.ads.AdLoadingDialog
 import com.monetization.ikadplugin.ads.FirebaseValue
-import com.monetization.ikadplugin.ads.FirebaseValue.ALL_ADS_OFF_ENABLE
-import com.monetization.ikadplugin.ads.FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE
-import com.monetization.ikadplugin.ads.FirebaseValue.INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE
-import com.monetization.ikadplugin.ads.FirebaseValue.SPLASH_INTERSTITIAL_CALL_ENABLE
-import com.monetization.ikadplugin.ads.FirebaseValue.allAppInterstitialAdCount
-import com.monetization.ikadplugin.ads.FirebaseValue.allAppInterstitialAdCountChange
-import com.monetization.ikadplugin.ads.FirebaseValue.interstitialCounterStartSplash
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
+import com.monetization.ikadplugin.BuildConfig
 
-class InterstitialNewController(
+class AdmobInterstitialAd(
     private val googleMobileAdsConsentManager: GoogleMobileAdsConsentManager,
     private val prefHelper: AdSharedPreference,
     private val internetController: InternetController
 ) {
+
+    companion object {
+
+        @Volatile
+        private var instance: AdmobInterstitialAd? = null
+
+        fun getInstance(
+            googleMobileAdsConsentManager: GoogleMobileAdsConsentManager,
+            prefHelper: AdSharedPreference,
+            internetController: InternetController
+        ): AdmobInterstitialAd {
+
+            return instance ?: synchronized(this) {
+                instance ?: AdmobInterstitialAd(
+                    googleMobileAdsConsentManager,
+                    prefHelper,
+                    internetController
+                ).also { instance = it }
+            }
+        }
+    }
     private val handlerAd: Handler = Handler(Looper.getMainLooper())
     private var isExitAppCall = false
     private var canRequestAd = true
@@ -143,7 +157,7 @@ class InterstitialNewController(
         interstitialControllerListener: InterstitialControllerListener
     ) {
         mInterstitialControllerListener = interstitialControllerListener
-        if (ALL_ADS_OFF_ENABLE || !googleMobileAdsConsentManager.canRequestAds || !enable || !internetController.isInternetConnected || prefHelper.isAppPurchased) {
+        if (FirebaseValue.ALL_ADS_OFF_ENABLE || !googleMobileAdsConsentManager.canRequestAds || !enable || !internetController.isInternetConnected || prefHelper.isAppPurchased) {
             closeHandler(1000)
             return
         }
@@ -190,7 +204,7 @@ class InterstitialNewController(
                                     ).show()
                                 }
                                 mInterstitialControllerListener?.onAdLoaded()
-                                if (SPLASH_INTERSTITIAL_CALL_ENABLE) {
+                                if (FirebaseValue.SPLASH_INTERSTITIAL_CALL_ENABLE) {
                                     if (isHandlerRunning) {
                                         showSplashInterstitial(
                                             context, true
@@ -274,7 +288,7 @@ class InterstitialNewController(
 
     fun initAdMob(context: Activity, enable: Boolean) {
         isExitAppCall = false
-        if (!INTERSTITIAL_PRE_LOAD_ENABLE || !enable || !internetController.isInternetConnected) {
+        if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE || !enable || !internetController.isInternetConnected) {
             return
         }
         loadNewAd(context)
@@ -299,7 +313,7 @@ class InterstitialNewController(
                 }
                 val adId = FetchConfig.getInterstitialId(adIdReferenceName)
 
-                if (!INTERSTITIAL_PRE_LOAD_ENABLE) {
+                if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
                     startHandlerInstant()
                     loadingProgress(mContext)
                 }
@@ -312,7 +326,7 @@ class InterstitialNewController(
                             super.onAdLoaded(p0)
                             canRequestAd = true
                             admobInterAd = p0
-                            if (!INTERSTITIAL_PRE_LOAD_ENABLE && isHandlerRunningInstant) {
+                            if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE && isHandlerRunningInstant) {
                                 adLoadingDialog?.dismissAlertDialog()
                                 removeCallBacksInstant()
                                 setAdmobFullScreen(activity = mContext, false, "")
@@ -328,7 +342,7 @@ class InterstitialNewController(
                             super.onAdFailedToLoad(p0)
                             canRequestAd = true
                             admobInterAd = null
-                            if (!INTERSTITIAL_PRE_LOAD_ENABLE && isHandlerRunningInstant) {
+                            if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE && isHandlerRunningInstant) {
                                 adLoadingDialog?.dismissAlertDialog()
                                 removeCallBacksInstant()
                                 mInterstitialControllerListener?.onAdClosed()
@@ -342,7 +356,7 @@ class InterstitialNewController(
             } else {
                 canRequestAd = true
                 adLoadingDialog?.dismissAlertDialog()
-                if (!INTERSTITIAL_PRE_LOAD_ENABLE) {
+                if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
                     mInterstitialControllerListener?.onAdClosed()
                 }
             }
@@ -413,7 +427,7 @@ class InterstitialNewController(
     }
 
     private fun onAdFailed() {
-        if (!INTERSTITIAL_PRE_LOAD_ENABLE && isHandlerRunningInstant) {
+        if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE && isHandlerRunningInstant) {
             adLoadingDialog?.dismissAlertDialog()
             removeCallBacksInstant()
             mInterstitialControllerListener?.onAdClosed()
@@ -427,13 +441,13 @@ class InterstitialNewController(
         interstitialControllerListener: InterstitialControllerListener
     ) {
         mInterstitialControllerListener = interstitialControllerListener
-        if (ALL_ADS_OFF_ENABLE || !googleMobileAdsConsentManager.canRequestAds || prefHelper.isAppPurchased || !enable || !internetController.isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd) {
+        if (FirebaseValue.ALL_ADS_OFF_ENABLE || !googleMobileAdsConsentManager.canRequestAds || prefHelper.isAppPurchased || !enable || !internetController.isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd) {
             if (enable) {
-                allAppInterstitialAdCount++
+                FirebaseValue.allAppInterstitialAdCount++
             }
             interstitialControllerListener.onAdClosed()
         } else {
-            if (interstitialCounterStartSplash) {
+            if (FirebaseValue.interstitialCounterStartSplash) {
                 startCounterSplashExecute(activity, adIdString)
             } else {
                 startCounterMainExecute(activity, adIdString)
@@ -448,12 +462,12 @@ class InterstitialNewController(
         interstitialControllerListener: InterstitialControllerListener
     ) {
         mInterstitialControllerListener = interstitialControllerListener
-        if (ALL_ADS_OFF_ENABLE || !googleMobileAdsConsentManager.canRequestAds || prefHelper.isAppPurchased || !enableAds || !internetController.isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd) {
+        if (FirebaseValue.ALL_ADS_OFF_ENABLE || !googleMobileAdsConsentManager.canRequestAds || prefHelper.isAppPurchased || !enableAds || !internetController.isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd) {
             interstitialControllerListener.onAdClosed()
         } else {
             if (admobInterAd != null) {
-                if (INTERSTITIAL_PRE_LOAD_ENABLE) {
-                    if (INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE) {
+                if (FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
+                    if (FirebaseValue.INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE) {
                         loadingProgress(activity)
                         handlerAd.postDelayed({
                             setAdmobFullScreen(activity, false, adIdString)
@@ -470,7 +484,7 @@ class InterstitialNewController(
             } else {
                 canRequestAd = true
                 admobInterAd = null
-                if (INTERSTITIAL_PRE_LOAD_ENABLE) {
+                if (FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
                     mInterstitialControllerListener?.onAdClosed()
                 }
                 loadAd(adIdString, activity)
@@ -488,11 +502,11 @@ class InterstitialNewController(
     private fun startCounterSplashExecute(
         activity: Activity, adIdString: String
     ) {
-        if (allAppInterstitialAdCount >= allAppInterstitialAdCountChange) {
-            allAppInterstitialAdCount = 0
+        if (FirebaseValue.allAppInterstitialAdCount >= FirebaseValue.allAppInterstitialAdCountChange) {
+            FirebaseValue.allAppInterstitialAdCount = 0
             if (admobInterAd != null) {
-                if (INTERSTITIAL_PRE_LOAD_ENABLE) {
-                    if (INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE) {
+                if (FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
+                    if (FirebaseValue.INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE) {
                         loadingProgress(activity)
                         handlerAd.postDelayed({
                             setAdmobFullScreen(activity, false, adIdString)
@@ -507,16 +521,16 @@ class InterstitialNewController(
                     }, 1000)
                 }
             } else {
-                if (!INTERSTITIAL_PRE_LOAD_ENABLE) {
+                if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
                     loadAd(adIdString, activity)
                 } else {
                     mInterstitialControllerListener?.onAdClosed()
                 }
             }
         } else {
-            allAppInterstitialAdCount++
+            FirebaseValue.allAppInterstitialAdCount++
             mInterstitialControllerListener?.onAdClosed()
-            if (INTERSTITIAL_PRE_LOAD_ENABLE) {
+            if (FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
                 loadAd(adIdString, activity)
             }
         }
@@ -525,11 +539,11 @@ class InterstitialNewController(
     private fun startCounterMainExecute(
         activity: Activity, adIdString: String
     ) {
-        if (allAppInterstitialAdCount == 0 || allAppInterstitialAdCount >= allAppInterstitialAdCountChange) {
-            allAppInterstitialAdCount = 1
+        if (FirebaseValue.allAppInterstitialAdCount == 0 || FirebaseValue.allAppInterstitialAdCount >= FirebaseValue.allAppInterstitialAdCountChange) {
+            FirebaseValue.allAppInterstitialAdCount = 1
             if (admobInterAd != null) {
-                if (INTERSTITIAL_PRE_LOAD_ENABLE) {
-                    if (INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE) {
+                if (FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
+                    if (FirebaseValue.INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE) {
                         loadingProgress(activity)
                         handlerAd.postDelayed({
                             setAdmobFullScreen(activity, false, adIdString)
@@ -544,16 +558,16 @@ class InterstitialNewController(
                     }, 1000)
                 }
             } else {
-                if (!INTERSTITIAL_PRE_LOAD_ENABLE) {
+                if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
                     loadAd(adIdString, activity)
                 } else {
                     mInterstitialControllerListener?.onAdClosed()
                 }
             }
         } else {
-            allAppInterstitialAdCount++
+            FirebaseValue.allAppInterstitialAdCount++
             mInterstitialControllerListener?.onAdClosed()
-            if (INTERSTITIAL_PRE_LOAD_ENABLE) {
+            if (FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
                 loadAd(adIdString, activity)
             }
         }
@@ -580,7 +594,7 @@ class InterstitialNewController(
                 admobInterAd = null
                 adLoadingDialog?.dismissAlertDialog()
                 mInterstitialControllerListener?.onAdClosed()
-                if (INTERSTITIAL_PRE_LOAD_ENABLE) {
+                if (FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
                     loadAd(adIdString, activity)
                 }
             }
@@ -599,7 +613,7 @@ class InterstitialNewController(
                 FirebaseValue.IS_INTER_SHOWING = false
                 adLoadingDialog?.dismissAlertDialog()
                 mInterstitialControllerListener?.onAdClosed()
-                if (INTERSTITIAL_PRE_LOAD_ENABLE) {
+                if (FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
                     loadAd(adIdString, activity)
                 }
             }

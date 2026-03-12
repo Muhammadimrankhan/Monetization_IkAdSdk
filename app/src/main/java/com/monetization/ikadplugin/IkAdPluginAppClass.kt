@@ -11,14 +11,9 @@ import com.monetization.ikadplugin.BuildConfig
 import com.monetization.ikadplugin.ads.AdKeys.IS_APP_PAUSE
 import com.monetization.ikadplugin.ads.AdKeys.activityCheck
 import com.monetization.ikadplugin.ads.AdKeys.canShowOpenAd
-import com.monetization.ikadplugin.ads.open_ap_ads.AppOpenManager
-import com.monetization.ikadplugin.koin_module.sharedModule
-import org.koin.android.ext.android.inject
-import org.koin.android.ext.koin.androidContext
-import org.koin.core.component.KoinComponent
-import org.koin.core.context.startKoin
+import com.monetization.ikadplugin.network_instance.IkAdSdk
 
-class IkAdPluginAppClass : Application(), Application.ActivityLifecycleCallbacks, KoinComponent {
+class IkAdPluginAppClass : Application(), Application.ActivityLifecycleCallbacks {
     companion object {
         var appContext: Context? = null
     }
@@ -28,26 +23,19 @@ class IkAdPluginAppClass : Application(), Application.ActivityLifecycleCallbacks
     private var isAdsInitialized = false
     private var isOpenAdInitialized = false
 
-    private val appOpenManager: AppOpenManager by inject()
     override fun onCreate() {
         super.onCreate()
 
         appContext = this
-        startKoin {
-            androidContext(applicationContext)
-            modules(
-                sharedModule
-            )
-        }
-//        IkAdSdk.initialize(this)
+        IkAdSdk.initialize(this)
     }
 
-    fun initOpenAd(adRef: String, enable: Boolean) {
-        if (!isOpenAdInitialized) {
-            isOpenAdInitialized = true
-            appOpenManager.initOpenAd(adRef,enable,  this)
-        }
-    }
+//    fun initOpenAd(adRef: String, enable: Boolean) {
+//        if (!isOpenAdInitialized) {
+//            isOpenAdInitialized = true
+//            appOpenManager.initOpenAd(adRef,enable,  this)
+//        }
+//    }
 
 
     fun initAds() {

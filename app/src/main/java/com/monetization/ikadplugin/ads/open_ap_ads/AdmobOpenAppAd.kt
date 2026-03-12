@@ -14,23 +14,38 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.appopen.AppOpenAd
-import com.google.android.gms.ads.appopen.AppOpenAd.AppOpenAdLoadCallback
-import com.monetization.ikadplugin.BuildConfig
 import com.monetization.ikadplugin.IkAdPluginAppClass
 import com.monetization.ikadplugin.ads.AdKeys
-import com.monetization.ikadplugin.ads.AdKeys.IS_APP_PAUSE
-import com.monetization.ikadplugin.ads.AdKeys.canShowOpenAd
 import com.monetization.ikadplugin.ads.AdLoadingDialog
 import com.monetization.ikadplugin.ads.FirebaseValue
-import com.monetization.ikadplugin.ads.FirebaseValue.ALL_ADS_OFF_ENABLE
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
 import java.util.Date
+import com.monetization.ikadplugin.BuildConfig
 
-class AppOpenManager(
+class AdmobOpenAppAd(
     private var internetController: InternetController, private val prefHelper: AdSharedPreference
 ) : LifecycleObserver, DefaultLifecycleObserver {
+
+    companion object {
+
+        @Volatile
+        private var instance: AdmobOpenAppAd? = null
+
+        fun getInstance(
+            internetController: InternetController,
+            prefHelper: AdSharedPreference
+        ): AdmobOpenAppAd {
+
+            return instance ?: synchronized(this) {
+                instance ?: AdmobOpenAppAd(
+                    internetController,
+                    prefHelper
+                ).also { instance = it }
+            }
+        }
+    }
     private var mAppOpenAd: AppOpenAd? = null
     private var loadTime: Long = 0
     private var canRequestAd = true
@@ -47,7 +62,7 @@ class AppOpenManager(
         this.appClass = appClass
         this.openAdEnable = openAdEnable
         try {
-            ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+            ProcessLifecycleOwner.Companion.get().lifecycle.addObserver(this)
         } catch (_: Exception) {
         }
     }
@@ -55,8 +70,8 @@ class AppOpenManager(
     override fun onStart(owner: LifecycleOwner) {
         super.onStart(owner)
         try {
-            IS_APP_PAUSE = false
-            if (canShowOpenAd && appClass.currentActivity != null && !prefHelper.isAppPurchased && openAdEnable) {
+            AdKeys.IS_APP_PAUSE = false
+            if (AdKeys.canShowOpenAd && appClass.currentActivity != null && !prefHelper.isAppPurchased && openAdEnable) {
                 showOpenAd()
             }
         } catch (ignored: Exception) {
@@ -64,7 +79,7 @@ class AppOpenManager(
     }
 
     private fun fetchAd() {
-        if (ALL_ADS_OFF_ENABLE || isAdAvailable || !internetController.isInternetConnected || prefHelper.isAppPurchased || IS_APP_PAUSE) {
+        if (FirebaseValue.ALL_ADS_OFF_ENABLE || isAdAvailable || !internetController.isInternetConnected || prefHelper.isAppPurchased || AdKeys.IS_APP_PAUSE) {
             return
         }
         if (!canRequestAd) {
@@ -76,7 +91,7 @@ class AppOpenManager(
         }
         val adId = FetchConfig.getOpenAppAdId(adRef)
         AppOpenAd.load(
-            appClass, adId, AdRequest.Builder().build(), object : AppOpenAdLoadCallback() {
+            appClass, adId, AdRequest.Builder().build(), object : AppOpenAd.AppOpenAdLoadCallback() {
                 override fun onAdLoaded(appOpenAd: AppOpenAd) {
                     super.onAdLoaded(appOpenAd)
                     canRequestAd = true
@@ -123,7 +138,7 @@ class AppOpenManager(
 
     private fun showOpenAd() {
         if (!AdKeys.isShowingOpenAd && isAdAvailable) {
-            if (!IS_APP_PAUSE && !FirebaseValue.IS_INTER_SHOWING) {
+            if (!AdKeys.IS_APP_PAUSE && !FirebaseValue.IS_INTER_SHOWING) {
                 appClass.currentActivity?.let { mContext ->
                     checkOpenAdProgressAndShowAd(mContext) {
                         fetchAd()

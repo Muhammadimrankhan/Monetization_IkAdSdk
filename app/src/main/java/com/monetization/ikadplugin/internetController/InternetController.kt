@@ -1,5 +1,6 @@
 package com.monetization.ikadplugin.internetController
 
+import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -8,7 +9,10 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
-class InternetController(private val connectivityManager: ConnectivityManager) {
+class InternetController(context: Context) {
+    private val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
     val isInternetConnected: Boolean
         get() {
             try {
