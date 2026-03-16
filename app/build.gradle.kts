@@ -44,10 +44,10 @@ android {
             resValue("string", "app_id", "ca-app-pub-3940256099942544~3347511713")
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
+//    compileOptions {
+//        sourceCompatibility = JavaVersion.VERSION_17
+//        targetCompatibility = JavaVersion.VERSION_17
+//    }
 }
 
 dependencies {
