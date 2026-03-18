@@ -1,23 +1,20 @@
 plugins {
-    alias(libs.plugins.android.application)
+    id("com.android.library")
+    id("org.jetbrains.kotlin.android")
+    id("maven-publish")
 }
 
 android {
     namespace = "com.monetization.ikadplugin"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+
+    compileSdk=36
 
     defaultConfig {
-        applicationId = "com.monetization.ikadplugin"
+//        applicationId = "com.monetization.ikadplugin"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles("consumer-rules.pro")
     }
 
     buildFeatures {
@@ -32,24 +29,30 @@ android {
                 "proguard-rules.pro"
             )
         }
-        debug {
-
-            isMinifyEnabled = false
-            isShrinkResources = false
-//            isDebuggable = true
-
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-            )
-            resValue("string", "app_id", "ca-app-pub-3940256099942544~3347511713")
-        }
     }
-//    compileOptions {
-//        sourceCompatibility = JavaVersion.VERSION_17
-//        targetCompatibility = JavaVersion.VERSION_17
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+//    kotlinOptions {
+//        jvmTarget = JavaVersion.VERSION_17.toString()
 //    }
 }
+group = "com.github.Muhammadimrankhan"
+version = "1.0"
 
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("release") {
+                from(components["release"])
+                groupId = project.group.toString()
+                artifactId = "Monetization_IkAdSdk"
+                version = project.version.toString()
+            }
+        }
+    }
+}
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
