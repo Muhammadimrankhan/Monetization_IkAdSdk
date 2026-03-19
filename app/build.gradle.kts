@@ -1,20 +1,26 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
-    id("com.android.library")
-    id("org.jetbrains.kotlin.android")
-    id("maven-publish")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
-    namespace = "com.monetization.ikadplugin"
-
-    compileSdk=36
+    namespace = "com.monetization.admob"
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
-//        applicationId = "com.monetization.ikadplugin"
+        applicationId = "com.monetization.admob"
         minSdk = 24
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-rules.pro")
     }
 
     buildFeatures {
@@ -29,27 +35,24 @@ android {
                 "proguard-rules.pro"
             )
         }
+        debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            resValue("string", "app_id", "ca-app-pub-3940256099942544~3347511713")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-//    kotlinOptions {
-//        jvmTarget = JavaVersion.VERSION_17.toString()
-//    }
-}
-group = "com.github.Muhammadimrankhan"
-version = "1.0"
 
-afterEvaluate {
-    publishing {
-        publications {
-            create<MavenPublication>("release") {
-                from(components["release"])
-                groupId = project.group.toString()
-                artifactId = "Monetization_IkAdSdk"
-                version = project.version.toString()
-            }
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
         }
     }
 }
@@ -62,28 +65,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    implementation("com.google.android.gms:play-services-ads:25.0.0")
-    implementation("androidx.lifecycle:lifecycle-process:2.10.0")
-    implementation(libs.billing.ktx)
+    implementation(project(":admob_monetization"))
 
-
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.messaging)
-    implementation(libs.firebase.crashlytics)
-    implementation(libs.firebase.analytics)
-    implementation(libs.firebase.config)
-    implementation(libs.firebase.perf)
-
-    //Text and Size-ing Libs
-    implementation(libs.ssp.android)
-    implementation(libs.sdp.android)
-//
-//    //liftoff mediation
-//    implementation("com.google.ads.mediation:vungle:7.7.1.0")
-//
-//    // facebook
-//    implementation("com.google.ads.mediation:facebook:6.21.0.1")
-//
-//    // mintegral mediation
-//    implementation("com.google.ads.mediation:mintegral:17.0.91.0")
 }

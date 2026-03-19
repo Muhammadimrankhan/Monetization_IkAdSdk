@@ -12,6 +12,7 @@ firebaseBom = "34.10.0"
 sdpAndroid = "1.1.1"
 sspAndroid = "1.1.1"
 billingKtx = "8.3.0"
+kotlin = "2.3.10"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -36,5 +37,7 @@ firebase-config = { module = "com.google.firebase:firebase-config" }
 firebase-perf = { module = "com.google.firebase:firebase-perf" }
 
 [plugins]
+
 android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version = "2.3.20" }
 

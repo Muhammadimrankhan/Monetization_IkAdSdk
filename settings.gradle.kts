@@ -27,4 +27,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "IkAdPlugin"
 include(":app")
- 
+include(":admob_monetization")
