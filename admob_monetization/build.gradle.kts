@@ -40,7 +40,6 @@ android {
     }
     buildFeatures {
         buildConfig =true
-        resValues =true
     }
 }
 group = "com.github.Muhammadimrankhan"
