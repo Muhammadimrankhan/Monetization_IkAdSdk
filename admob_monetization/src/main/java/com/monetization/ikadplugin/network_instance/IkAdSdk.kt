@@ -1,11 +1,9 @@
 package com.monetization.ikadplugin.network_instance
 
 import android.app.Activity
-import android.content.Context
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.RequestConfiguration
 import com.monetization.ikadplugin.BuildConfig
-import com.monetization.ikadplugin.IkAdPluginAppClass
 import com.monetization.ikadplugin.ads.banner.AdmobBannerAd
 import com.monetization.ikadplugin.ads.collapse.AdmobCollapsibleBannerAd
 import com.monetization.ikadplugin.ads.interstitial_ads.AdmobInterstitialAd
@@ -17,53 +15,47 @@ import com.monetization.ikadplugin.pref.AdSharedPreference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.lang.ref.WeakReference
 
 object IkAdSdk {
+    private var activityRef: WeakReference<Activity>? = null
 
-    private lateinit var consentManager: GoogleMobileAdsConsentManager
-    private lateinit var prefHelper: AdSharedPreference
-    private lateinit var internetController: InternetController
+    fun setCurrentActivity(activity: Activity) {
+        activityRef = WeakReference(activity)
+    }
 
-    fun initialize(context: Context) {
-        consentManager = GoogleMobileAdsConsentManager(context)
-        prefHelper = AdSharedPreference(context)
-        internetController = InternetController(context)
+    fun getCurrentActivity(): Activity? {
+        return activityRef?.get()
     }
 
     val nativeController: AdmobNativeAd by lazy {
-         AdmobNativeAd.getInstance(
-            consentManager, prefHelper, internetController
-        )
+        AdmobNativeAd.getInstance()
     }
 
     val interstitialController by lazy {
-        AdmobInterstitialAd.getInstance(
-            consentManager, prefHelper, internetController
-        )
+        AdmobInterstitialAd.getInstance()
     }
 
     val bannerController by lazy {
-        AdmobBannerAd.getInstance(
-            consentManager, prefHelper, internetController
-        )
+        AdmobBannerAd.getInstance()
     }
 
     val collapseBannerController by lazy {
-        AdmobCollapsibleBannerAd.getInstance(
-            consentManager, prefHelper, internetController
-        )
+        AdmobCollapsibleBannerAd.getInstance()
     }
 
     val openAppAd by lazy {
-        AdmobOpenAppAd.getInstance(
-            internetController, prefHelper
-        )
+        AdmobOpenAppAd.getInstance()
     }
 
     fun startSplash(
         context: Activity, consentVerifyID: String = "", consentCallback: (Any) -> Unit
     ) {
-        if (!prefHelper.isAppPurchased && internetController.isInternetConnected) {
+        var consentManager = GoogleMobileAdsConsentManager.getInstance(context)
+        if (!AdSharedPreference.getInstance(context).isAppPurchased && InternetController.getInstance(
+                context
+            ).isInternetConnected
+        ) {
             consentManager.gatherConsent(context) { error ->
                 if (error == null && consentManager.canRequestAds) {
                     //Applovin consent
@@ -78,6 +70,7 @@ object IkAdSdk {
 //                        sdk.setConsentStatus(context, MBridgeConstans.IS_SWITCH_ON)
 //                        sdk.setDoNotTrackStatus(context, false)
                 }
+                initMobileSdk(context)
                 consentCallback.invoke(consentManager.canRequestAds)
             }
 
@@ -87,14 +80,25 @@ object IkAdSdk {
                 )
             }
         } else {
+            initMobileSdk(context)
             consentCallback.invoke(consentManager.canRequestAds)
         }
+    }
 
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                (IkAdPluginAppClass.appContext as IkAdPluginAppClass).initAds()
-            } catch (_: Exception) {
+    fun initMobileSdk(context: Activity) {
+        if (GoogleMobileAdsConsentManager.getInstance(context).canRequestAds) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    MobileAds.initialize(context)
+                } catch (_: Exception) {
+                } catch (_: ClassNotFoundException) {
+                } catch (_: NoClassDefFoundError) {
+                } catch (_: NoSuchMethodError) {
+                } catch (_: VerifyError) {
+                } catch (_: OutOfMemoryError) {
+                }
             }
+
         }
     }
 }

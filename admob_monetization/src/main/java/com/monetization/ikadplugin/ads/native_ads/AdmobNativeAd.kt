@@ -19,25 +19,16 @@ import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
 import com.monetization.ikadplugin.BuildConfig
 
-class AdmobNativeAd private constructor(
-    private val googleMobileAdsConsentManager: GoogleMobileAdsConsentManager,
-    private val prefHelper: AdSharedPreference,
-    private val internetController: InternetController
-) {
+class AdmobNativeAd {
 
     companion object {
         @Volatile
         private var INSTANCE: AdmobNativeAd? = null
 
         fun getInstance(
-            googleMobileAdsConsentManager: GoogleMobileAdsConsentManager,
-            prefHelper: AdSharedPreference,
-            internetController: InternetController
         ): AdmobNativeAd {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: AdmobNativeAd(
-                    googleMobileAdsConsentManager, prefHelper, internetController
-                ).also { INSTANCE = it }
+                INSTANCE ?: AdmobNativeAd().also { INSTANCE = it }
             }
         }
     }
@@ -58,7 +49,7 @@ class AdmobNativeAd private constructor(
         adIdNativeReference: String, adLayout: LinearLayout, context: Context, enable: Boolean
     ) {
         try {
-            if (!FirebaseValue.ALL_ADS_OFF_ENABLE && googleMobileAdsConsentManager.canRequestAds && enable && !prefHelper.isAppPurchased && internetController.isInternetConnected) {
+            if (!FirebaseValue.ALL_ADS_OFF_ENABLE && GoogleMobileAdsConsentManager.getInstance(context).canRequestAds && enable && !AdSharedPreference.getInstance(context).isAppPurchased && InternetController.getInstance(context).isInternetConnected) {
                 if (largeAndSmallNativeAd == null) {
                     if (!canRequestAd) {
                         return
@@ -127,7 +118,7 @@ class AdmobNativeAd private constructor(
         adFrame: LinearLayout,
         loadNewAd: Boolean = false
     ) {
-        if (enable && !prefHelper.isAppPurchased && largeAndSmallNativeAd != null) {
+        if (enable && !AdSharedPreference.getInstance(context).isAppPurchased && largeAndSmallNativeAd != null) {
             largeAndSmallNativeAd?.let {
                 try {
                     NativeViewPopulate.addLargeNativeView(context, adFrame, it, adViewType)
@@ -153,7 +144,7 @@ class AdmobNativeAd private constructor(
         loadNewAd: Boolean = false
     ) {
         try {
-            if (!FirebaseValue.ALL_ADS_OFF_ENABLE && googleMobileAdsConsentManager.canRequestAds && enable && !prefHelper.isAppPurchased && internetController.isInternetConnected) {
+            if (!FirebaseValue.ALL_ADS_OFF_ENABLE && GoogleMobileAdsConsentManager.getInstance(context).canRequestAds && enable && !AdSharedPreference.getInstance(context).isAppPurchased && InternetController.getInstance(context).isInternetConnected) {
                 if (largeAndSmallNativeAd == null) {
                     if (!canRequestAd) {
                         return

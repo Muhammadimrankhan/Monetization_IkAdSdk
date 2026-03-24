@@ -23,11 +23,7 @@ import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
 import com.monetization.ikadplugin.BuildConfig
 
-class AdmobCollapsibleBannerAd private constructor(
-    private val consentManager: GoogleMobileAdsConsentManager,
-    private val prefHelper: AdSharedPreference,
-    private val internetController: InternetController
-) {
+class AdmobCollapsibleBannerAd{
 
     companion object {
 
@@ -35,16 +31,10 @@ class AdmobCollapsibleBannerAd private constructor(
         private var INSTANCE: AdmobCollapsibleBannerAd? = null
 
         fun getInstance(
-            consentManager: GoogleMobileAdsConsentManager,
-            prefHelper: AdSharedPreference,
-            internetController: InternetController
         ): AdmobCollapsibleBannerAd {
 
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: AdmobCollapsibleBannerAd(
-                    consentManager,
-                    prefHelper,
-                    internetController
                 ).also { INSTANCE = it }
             }
         }
@@ -98,8 +88,8 @@ class AdmobCollapsibleBannerAd private constructor(
 
             if (FirebaseValue.ALL_ADS_OFF_ENABLE ||
                 !enable ||
-                prefHelper.isAppPurchased ||
-                !internetController.isInternetConnected
+                AdSharedPreference.getInstance(activity).isAppPurchased ||
+                !InternetController.getInstance(activity).isInternetConnected
             ) return
 
             if (bannerAd == null) {
@@ -170,7 +160,7 @@ class AdmobCollapsibleBannerAd private constructor(
         loadNewAd: Boolean = false
     ) {
 
-        if (enable && !prefHelper.isAppPurchased && bannerAd != null) {
+        if (enable && !AdSharedPreference.getInstance(activity).isAppPurchased && bannerAd != null) {
 
             bannerAd?.let {
 
@@ -212,8 +202,8 @@ class AdmobCollapsibleBannerAd private constructor(
 
             if (FirebaseValue.ALL_ADS_OFF_ENABLE ||
                 !enable ||
-                prefHelper.isAppPurchased ||
-                !internetController.isInternetConnected
+                AdSharedPreference.getInstance(activity).isAppPurchased ||
+                !InternetController.getInstance(activity).isInternetConnected
             ) {
 
                 adFrame.removeAllViews()

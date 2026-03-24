@@ -18,26 +18,16 @@ import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
 
-class AdmobBannerAd private constructor(
-    private val googleMobileAdsConsentManager: GoogleMobileAdsConsentManager,
-    private val prefHelper: AdSharedPreference,
-    private val internetController: InternetController
-) {
+class AdmobBannerAd {
 
     companion object {
         @Volatile
         private var INSTANCE: AdmobBannerAd? = null
 
         fun getInstance(
-            googleMobileAdsConsentManager: GoogleMobileAdsConsentManager,
-            prefHelper: AdSharedPreference,
-            internetController: InternetController
         ): AdmobBannerAd {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: AdmobBannerAd(
-                    googleMobileAdsConsentManager,
-                    prefHelper,
-                    internetController
                 ).also { INSTANCE = it }
             }
         }
@@ -62,10 +52,10 @@ class AdmobBannerAd private constructor(
     ) {
         try {
             if (!FirebaseValue.ALL_ADS_OFF_ENABLE &&
-                googleMobileAdsConsentManager.canRequestAds &&
+                GoogleMobileAdsConsentManager.getInstance(context).canRequestAds &&
                 enable &&
-                !prefHelper.isAppPurchased &&
-                internetController.isInternetConnected
+                !AdSharedPreference.getInstance(context).isAppPurchased &&
+                InternetController.getInstance(context).isInternetConnected
             ) {
 
                 if (bannerAdView == null) {
@@ -136,7 +126,7 @@ class AdmobBannerAd private constructor(
         loadNewAd: Boolean = false
     ) {
 
-        if (enable && !prefHelper.isAppPurchased && bannerAdView != null) {
+        if (enable && !AdSharedPreference.getInstance(context).isAppPurchased && bannerAdView != null) {
 
             bannerAdView?.let {
 
@@ -185,10 +175,10 @@ class AdmobBannerAd private constructor(
         try {
 
             if (!FirebaseValue.ALL_ADS_OFF_ENABLE &&
-                googleMobileAdsConsentManager.canRequestAds &&
+                GoogleMobileAdsConsentManager.getInstance(context).canRequestAds &&
                 enable &&
-                !prefHelper.isAppPurchased &&
-                internetController.isInternetConnected
+                !AdSharedPreference.getInstance(context).isAppPurchased &&
+                InternetController.getInstance(context).isInternetConnected
             ) {
 
                 if (bannerAdView == null) {

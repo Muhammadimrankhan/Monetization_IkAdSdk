@@ -21,6 +21,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["ADMOB_APP_ID"] = "ca-app-pub-3940256099942544~3347511713"
+
     }
 
     buildFeatures {
@@ -34,6 +36,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            manifestPlaceholders["ADMOB_APP_ID"] =
+                "ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy"
         }
         debug {
             isMinifyEnabled = false
@@ -42,7 +46,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            resValue("string", "app_id", "ca-app-pub-3940256099942544~3347511713")
+            manifestPlaceholders["ADMOB_APP_ID"] =
+                "ca-app-pub-3940256099942544~3347511713"
         }
     }
     compileOptions {

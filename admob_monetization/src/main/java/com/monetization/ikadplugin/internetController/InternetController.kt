@@ -9,10 +9,19 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
-class InternetController(context: Context) {
+class InternetController private constructor(context: Context) {
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    companion object {
+        @Volatile
+        private var INSTANCE: InternetController? = null
 
+        fun getInstance(context: Context): InternetController {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: InternetController(context).also { INSTANCE = it }
+            }
+        }
+    }
     val isInternetConnected: Boolean
         get() {
             try {

@@ -11,7 +11,19 @@ import com.google.android.ump.FormError
 import com.google.android.ump.UserMessagingPlatform
 import com.monetization.ikadplugin.BuildConfig
 
-class GoogleMobileAdsConsentManager (context: Context) {
+class GoogleMobileAdsConsentManager private constructor(context: Context) {
+
+    companion object {
+        @Volatile
+        private var INSTANCE: GoogleMobileAdsConsentManager? = null
+
+        fun getInstance(context: Context): GoogleMobileAdsConsentManager {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: GoogleMobileAdsConsentManager(context).also { INSTANCE = it }
+            }
+        }
+    }
+
     private val consentInformation: ConsentInformation =
         UserMessagingPlatform.getConsentInformation(context)
 
