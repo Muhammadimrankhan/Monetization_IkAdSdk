@@ -1,5 +1,6 @@
 A lightweight and flexible Android Ads SDK built to simplify AdMob + mediation integration, with support for remote config (Firebase), multiple ad placements, and lifecycle-aware ad handling.
 📦 Installation
+
 Step 1: Add JitPack Repository
 
 Add this in your root settings.gradle:
