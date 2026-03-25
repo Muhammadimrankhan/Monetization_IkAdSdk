@@ -11,13 +11,17 @@ dependencyResolutionManagement {
 }
 
 Step 2: Add Dependency
+
 dependencies {
     implementation 'com.github.Muhammadimrankhan:Monetization_IkAdSdk:0.0.1_adapter'
 }
 
-Core Classes
+Core Classes:
+
 IkAdSdk → Main entry point for all ad operations
+
 AdsConfig → Controls ad behavior via local or Firebase config
+
 NetworkIdConfig → Stores all ad unit IDs (Interstitial, Native, Banner, Open App)
 
 🎛️ Ads Configuration
@@ -25,7 +29,9 @@ NetworkIdConfig → Stores all ad unit IDs (Interstitial, Native, Banner, Open A
 You can control SDK behavior dynamically using Firebase Remote Config or default values.
 
 Default Config Values
+
 val adsConfig = AdsConfig(
+
     allAppInterstitialAdCountChange = 3,
     splashTime = 13,
     colorNativeCTR1 = "#E74625",
@@ -46,15 +52,20 @@ val adsConfig = AdsConfig(
     interstitialPreloadProgressEnable = false
 )
 Apply Firebase Remote Config
+
 Call this after fetching values from Firebase:
 
 FetchConfig.assignRemoteConfigValues(adsConfig)
 
 
 📡 Ad Unit Configuration
+
 Define all your ad placements in one place:
+
 Admob app id initialize first in app gradle follows:
+
   buildTypes {
+  
         release {
             manifestPlaceholders["ADMOB_APP_ID"] =
                 "ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy"
@@ -92,9 +103,11 @@ val networkConfig = NetworkIdConfig(
 )
 
 Initialize it:
+
 FetchConfig.initializeNetWorkId(networkConfig)
 
 🏁 Initialization (Application Class)
+
 Create a custom Application class:
 
 class IkAdPluginAppClass : Application(), Application.ActivityLifecycleCallbacks {
@@ -153,18 +166,28 @@ class IkAdPluginAppClass : Application(), Application.ActivityLifecycleCallbacks
 🧠 Key Features
 
 ✅ Centralized ad management
+
 ✅ Firebase Remote Config support
+
 ✅ Multiple ad placements
+
 ✅ Open App Ad lifecycle handling
+
 ✅ Memory-safe Activity tracking (via WeakReference)
+
 ✅ Easy integration with existing apps
 
 ⚠️ Best Practices
+
 Always initialize SDK in Application class
+
 Use default ad IDs as fallback
+
 Avoid showing Open Ads on critical screens (e.g., Splash, MainActivity)
+
 Keep Firebase values synced with SDK config
 📌 Notes
-Ensure AdMob_App_ID is added in AndroidManifest.xml
+
+Ensure AdMob_App_ID is added in App Gradle
 Test using test ads before publishing
 Handle GDPR/UMP consent if targeting EU users
