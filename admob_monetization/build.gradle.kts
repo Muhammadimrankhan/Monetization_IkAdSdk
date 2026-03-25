@@ -43,7 +43,7 @@ android {
     }
 }
 group = "com.github.Muhammadimrankhan"
-version = "0.0.3"
+version = "0.0.1"
 
 
 afterEvaluate {
@@ -53,7 +53,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.Muhammadimrankhan"
                 artifactId = "Monetization_IkAdSdk"
-                version = "0.0.3"
+                version = "0.0.1"
             }
         }
     }
@@ -79,11 +79,11 @@ dependencies {
     implementation("com.intuit.ssp:ssp-android:1.1.1")
 //
 //    //liftoff mediation
-//    implementation("com.google.ads.mediation:vungle:7.7.1.0")
+    implementation("com.google.ads.mediation:vungle:7.7.1.0")
 //
 //    // facebook
-//    implementation("com.google.ads.mediation:facebook:6.21.0.1")
+    implementation("com.google.ads.mediation:facebook:6.21.0.1")
 //
 //    // mintegral mediation
-//    implementation("com.google.ads.mediation:mintegral:17.0.91.0")
+    implementation("com.google.ads.mediation:mintegral:17.0.91.0")
 }

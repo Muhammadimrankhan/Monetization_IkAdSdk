@@ -3,6 +3,8 @@ package com.monetization.ikadplugin.network_instance
 import android.app.Activity
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.RequestConfiguration
+import com.mbridge.msdk.MBridgeConstans
+import com.mbridge.msdk.out.MBridgeSDKFactory
 import com.monetization.ikadplugin.BuildConfig
 import com.monetization.ikadplugin.ads.banner.AdmobBannerAd
 import com.monetization.ikadplugin.ads.collapse.AdmobCollapsibleBannerAd
@@ -12,6 +14,7 @@ import com.monetization.ikadplugin.ads.open_ap_ads.AdmobOpenAppAd
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
+import com.vungle.ads.VunglePrivacySettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -63,12 +66,12 @@ object IkAdSdk {
 //                            googleMobileAdsConsentManager.canRequestAds
 //                        )
                     //Liftoff consent
-//                        VunglePrivacySettings.setGDPRStatus(true, "v1.0.0")
-//                        VunglePrivacySettings.setCCPAStatus(true)
+                        VunglePrivacySettings.setGDPRStatus(true, "v1.0.0")
+                        VunglePrivacySettings.setCCPAStatus(true)
 //                        //Mintegral consent
-//                        var sdk = MBridgeSDKFactory.getMBridgeSDK()
-//                        sdk.setConsentStatus(context, MBridgeConstans.IS_SWITCH_ON)
-//                        sdk.setDoNotTrackStatus(context, false)
+                        var sdk = MBridgeSDKFactory.getMBridgeSDK()
+                        sdk.setConsentStatus(context, MBridgeConstans.IS_SWITCH_ON)
+                        sdk.setDoNotTrackStatus(context, false)
                 }
                 initMobileSdk(context)
                 consentCallback.invoke(consentManager.canRequestAds)
