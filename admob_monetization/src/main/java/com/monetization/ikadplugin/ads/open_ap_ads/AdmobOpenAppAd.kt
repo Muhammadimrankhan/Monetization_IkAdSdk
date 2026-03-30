@@ -51,7 +51,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
 
 
     fun initOpenAd(
-        context: Activity, adRef: String, openAdEnable: Boolean
+        context: Context, adRef: String, openAdEnable: Boolean
     ) {
         this.adRef = adRef
         this.appContext = context

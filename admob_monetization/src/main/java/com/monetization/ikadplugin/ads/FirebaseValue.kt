@@ -1,8 +1,12 @@
 package com.monetization.ikadplugin.ads
 
+import com.monetization.ikadplugin.firebase_value_fetch.GradientColors
+
 object FirebaseValue {
     var INTERSTITIAL_PRE_LOAD_ENABLE = true
     var INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE = true
+    var everyNativeCtaColorChangeEnable = false
+    var everyNativeCtaColorList = mutableListOf<GradientColors>()
     var ALL_ADS_OFF_ENABLE = false
 
     var interstitialCounterStartSplash = true

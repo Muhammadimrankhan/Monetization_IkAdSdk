@@ -1,14 +1,17 @@
 package com.monetization.admob
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.monetization.ikadplugin.ads.FirebaseValue
 import com.monetization.ikadplugin.ads_id.NetworkIdConfig
 import com.monetization.ikadplugin.firebase_value_fetch.AdsConfig
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
+import com.monetization.ikadplugin.firebase_value_fetch.GradientColors
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +41,20 @@ class MainActivity : AppCompatActivity() {
            FirebaseValue.SPLASH_INTERSTITIAL_CALL_ENABLE,
            FirebaseValue.PROGRESS_LOADING_OPEN_AP_ENABLE,
            FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE,
-           FirebaseValue.INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE
+           FirebaseValue.INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE,
+           FirebaseValue.everyNativeCtaColorChangeEnable, listOf(
+               GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color)),
+               GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color)),
+               GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color)),
+               GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color)),
+               GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color)),
+               GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color)),
+               GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color)),
+               GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color)),
+               GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color)),
+               GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color)),
+               GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color))
+           )
        )
 
         FetchConfig.assignRemoteConfigValues(adsConfig)

@@ -65,25 +65,8 @@ dependencies {
     implementation("com.google.android.gms:play-services-ads:25.1.0")
     implementation("androidx.lifecycle:lifecycle-process:2.10.0")
     implementation("com.android.billingclient:billing-ktx:8.3.0")
-
-
-//    implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
-//    implementation("com.google.firebase:firebase-messaging")
-//    implementation("com.google.firebase:firebase-crashlytics")
-//    implementation("com.google.firebase:firebase-analytics")
-//    implementation("com.google.firebase:firebase-config")
-//    implementation("com.google.firebase:firebase-perf")
-
     //Text and Size-ing Libs
     implementation("com.intuit.sdp:sdp-android:1.1.1")
     implementation("com.intuit.ssp:ssp-android:1.1.1")
-//
-//    //liftoff mediation
-//    implementation("com.google.ads.mediation:vungle:7.7.1.0")
-//
-//    // facebook
-//    implementation("com.google.ads.mediation:facebook:6.21.0.1")
-//
-//    // mintegral mediation
-//    implementation("com.google.ads.mediation:mintegral:17.0.91.0")
+
 }

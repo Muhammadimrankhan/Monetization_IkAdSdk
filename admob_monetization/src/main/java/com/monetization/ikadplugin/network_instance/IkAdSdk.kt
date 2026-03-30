@@ -20,8 +20,12 @@ import java.lang.ref.WeakReference
 object IkAdSdk {
     private var activityRef: WeakReference<Activity>? = null
 
-    fun setCurrentActivity(activity: Activity) {
-        activityRef = WeakReference(activity)
+    fun setCurrentActivity(activity: Activity?) {
+        activityRef = if (activity != null) {
+            WeakReference(activity)
+        } else {
+            null   // clear reference
+        }
     }
 
     fun getCurrentActivity(): Activity? {
@@ -44,7 +48,7 @@ object IkAdSdk {
         AdmobCollapsibleBannerAd.getInstance()
     }
 
-    val openAppAd by lazy {
+    val openAppAdController by lazy {
         AdmobOpenAppAd.getInstance()
     }
 
@@ -57,19 +61,6 @@ object IkAdSdk {
             ).isInternetConnected
         ) {
             consentManager.gatherConsent(context) { error ->
-                if (error == null && consentManager.canRequestAds) {
-                    //Applovin consent
-//                        AppLovinPrivacySettings.setHasUserConsent(
-//                            googleMobileAdsConsentManager.canRequestAds
-//                        )
-                    //Liftoff consent
-//                        VunglePrivacySettings.setGDPRStatus(true, "v1.0.0")
-//                        VunglePrivacySettings.setCCPAStatus(true)
-//                        //Mintegral consent
-//                        var sdk = MBridgeSDKFactory.getMBridgeSDK()
-//                        sdk.setConsentStatus(context, MBridgeConstans.IS_SWITCH_ON)
-//                        sdk.setDoNotTrackStatus(context, false)
-                }
                 initMobileSdk(context)
                 consentCallback.invoke(consentManager.canRequestAds)
             }

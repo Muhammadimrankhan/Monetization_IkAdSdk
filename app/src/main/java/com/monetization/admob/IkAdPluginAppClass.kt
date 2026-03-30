@@ -1,0 +1,73 @@
+package com.monetization.admob
+
+import android.app.Activity
+import android.app.Application
+import android.os.Bundle
+import com.monetization.ikadplugin.ads.AdKeys.IS_APP_PAUSE
+import com.monetization.ikadplugin.ads.AdKeys.canShowOpenAd
+import com.monetization.ikadplugin.network_instance.IkAdSdk
+
+class IkAdPluginAppClass : Application(), Application.ActivityLifecycleCallbacks {
+
+    private var isAdsInitialized = false
+    private var isOpenAdInitialized = false
+
+    fun initOpenAd(adRef: String, enable: Boolean) {
+        if (!isOpenAdInitialized) {
+            isOpenAdInitialized = true
+            IkAdSdk.openAppAdController.initOpenAd(this, adRef, enable)
+        }
+    }
+
+
+    fun initFirst() {
+        if (!isAdsInitialized) {
+            isAdsInitialized = true
+
+            try {
+                registerActivityLifecycleCallbacks(this)
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+        IkAdSdk.setCurrentActivity(activity)
+    }
+
+    private fun checkActivity() {
+        // initialize those Activities which you not want to show open app ads via & operator use add more
+        canShowOpenAd = IkAdSdk.getCurrentActivity() != MainActivity::class.java
+    }
+
+    override fun onActivityStarted(activity: Activity) {
+        IkAdSdk.setCurrentActivity(activity)
+        checkActivity()
+    }
+
+    override fun onActivityResumed(activity: Activity) {
+        IS_APP_PAUSE = false
+        IkAdSdk.setCurrentActivity(activity)
+        checkActivity()
+    }
+
+
+    override fun onActivityPaused(activity: Activity) {
+        IS_APP_PAUSE = true
+    }
+
+    override fun onActivityStopped(activity: Activity) {
+    }
+
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
+
+    }
+
+    override fun onActivityDestroyed(activity: Activity) {
+        IkAdSdk.setCurrentActivity(null)
+        canShowOpenAd = true
+        IS_APP_PAUSE = false
+    }
+
+}

@@ -2,26 +2,24 @@ package com.monetization.ikadplugin.ads
 
 import android.app.Activity
 import android.content.Context
-import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewOutlineProvider
 import android.view.WindowMetrics
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.graphics.toColorInt
-import androidx.core.view.ViewCompat
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.nativead.MediaView
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdView
 import com.monetization.ikadplugin.R
+import com.monetization.ikadplugin.ads.FirebaseValue.everyNativeCtaColorList
 import com.monetization.ikadplugin.ads.FirebaseValue.nativeAdsAttributionColorChange
 import com.monetization.ikadplugin.ads.FirebaseValue.nativeAdsBgColorChange
 import com.monetization.ikadplugin.ads.FirebaseValue.nativeButtonRectangle
@@ -63,10 +61,9 @@ object NativeViewPopulate {
 
         adView.iconView = adView.findViewById(R.id.ad_app_icon)
         adView.callToActionView = button
-        if (FirebaseValue.nativeButtonThemeColorChange) {
-            val color = FirebaseValue.colorNativeCTR1.toColorInt()
-            val color2 = FirebaseValue.colorNativeCTR2.toColorInt()
-            val colors = intArrayOf(color, color2)
+        if (FirebaseValue.everyNativeCtaColorChangeEnable) {
+            val gradient = everyNativeCtaColorList.random()
+            val colors = intArrayOf(gradient.start, gradient.end)
             val gd = GradientDrawable()
             gd.orientation = GradientDrawable.Orientation.LEFT_RIGHT
             gd.colors = colors
@@ -77,7 +74,24 @@ object NativeViewPopulate {
                 gd.cornerRadius = 80f
             }
             button.background = gd
+        } else {
+            if (FirebaseValue.nativeButtonThemeColorChange) {
+                val color = FirebaseValue.colorNativeCTR1.toColorInt()
+                val color2 = FirebaseValue.colorNativeCTR2.toColorInt()
+                val colors = intArrayOf(color, color2)
+                val gd = GradientDrawable()
+                gd.orientation = GradientDrawable.Orientation.LEFT_RIGHT
+                gd.colors = colors
+                gd.shape = GradientDrawable.RECTANGLE
+                if (nativeButtonRectangle) {
+                    gd.cornerRadius = 10f
+                } else {
+                    gd.cornerRadius = 80f
+                }
+                button.background = gd
+            }
         }
+
 
         (adView.headlineView as TextView).text = nativeAd.headline
         if (nativeAd.body == null) {
@@ -118,8 +132,7 @@ object NativeViewPopulate {
         if (nativeAdsBgColorChange) {
             val bg = adView.findViewById<LinearLayout>(R.id.bg_native)
             val colors = intArrayOf(
-                FirebaseValue.colorNativeBg.toColorInt(),
-                FirebaseValue.colorNativeBg.toColorInt()
+                FirebaseValue.colorNativeBg.toColorInt(), FirebaseValue.colorNativeBg.toColorInt()
             )
             val gd = GradientDrawable()
             gd.orientation = GradientDrawable.Orientation.LEFT_RIGHT
@@ -141,6 +154,7 @@ object NativeViewPopulate {
         }
         adFrame.addView(adView)
     }
+
     fun getAdSize(activity: Activity): AdSize {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val windowMetrics: WindowMetrics = activity.windowManager.currentWindowMetrics

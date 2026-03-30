@@ -24,10 +24,16 @@ object FetchConfig {
         FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE = adsConfig.interstitialPreloadEnable
         FirebaseValue.INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE =
             adsConfig.interstitialPreloadProgressEnable
+        FirebaseValue.everyNativeCtaColorChangeEnable = adsConfig.everyNativeCtaColorChangeEnable
+        FirebaseValue.everyNativeCtaColorList.addAll(adsConfig.everyNativeCtaColor)
+
     }
 
     private var networkIdConfig: NetworkIdConfig = NetworkIdConfig(
-        interstitialAds = emptyMap(), nativeAdId = emptyMap(), bannerAdId = emptyMap(), openAppAdId = emptyMap()
+        interstitialAds = emptyMap(),
+        nativeAdId = emptyMap(),
+        bannerAdId = emptyMap(),
+        openAppAdId = emptyMap()
     )
 //    private  var networkIdConfig: NetworkIdConfig? = null
 
