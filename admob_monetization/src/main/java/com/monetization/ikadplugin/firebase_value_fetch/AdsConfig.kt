@@ -6,6 +6,7 @@ data class AdsConfig(
     val colorNativeCTR1: String = "#E74625",
     val colorNativeCTR2: String = "#E74625",
     val colorNativeBg: String = "#EDEDED",
+    val colorNativeBgDarkTheme: String = "#505050",
     val colorNativeBgBorderStokes: String = "#505050",
     val colorAdsAttribNative: String = "#000000",
     val interstitialCounterStartSplash: Boolean = true,
@@ -20,5 +21,6 @@ data class AdsConfig(
     val interstitialPreloadEnable: Boolean = false,
     val interstitialPreloadProgressEnable: Boolean = false,
     val everyNativeCtaColorChangeEnable: Boolean = false,
-    val everyNativeCtaColor: List<GradientColors> = emptyList()
+    val everyNativeCtaColor: List<GradientColors> = emptyList(),
+    val darkTheme: Boolean = false
 )

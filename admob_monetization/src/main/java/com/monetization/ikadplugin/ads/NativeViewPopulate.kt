@@ -2,6 +2,7 @@ package com.monetization.ikadplugin.ads
 
 import android.app.Activity
 import android.content.Context
+import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
@@ -58,9 +59,8 @@ object NativeViewPopulate {
             adText.setTextColor(FirebaseValue.colorAdsAttribNative.toColorInt())
         }
         adView.callToActionView = button
-
         adView.iconView = adView.findViewById(R.id.ad_app_icon)
-        adView.callToActionView = button
+//        adView.callToActionView = button
         if (FirebaseValue.everyNativeCtaColorChangeEnable) {
             val gradient = everyNativeCtaColorList.random()
             val colors = intArrayOf(gradient.start, gradient.end)
@@ -92,13 +92,22 @@ object NativeViewPopulate {
             }
         }
 
+        val headline = adView.headlineView as TextView
+        val body = adView.bodyView as TextView?
 
-        (adView.headlineView as TextView).text = nativeAd.headline
+        if (FirebaseValue.darkTheme) {
+            headline.setTextColor(Color.WHITE)
+            body?.setTextColor(Color.WHITE)
+            adText.setTextColor(Color.WHITE)
+        }
+
+
+        headline.text = nativeAd.headline
         if (nativeAd.body == null) {
             adView.bodyView?.visibility = View.GONE
         } else {
             adView.bodyView?.visibility = View.VISIBLE
-            (adView.bodyView as TextView).text = nativeAd.body
+            body?.text = nativeAd.body
         }
         if (nativeAd.callToAction == null) {
             adView.callToActionView?.visibility = View.GONE
@@ -129,20 +138,36 @@ object NativeViewPopulate {
             }
         } catch (_: Exception) {
         }
-        if (nativeAdsBgColorChange) {
-            val bg = adView.findViewById<LinearLayout>(R.id.bg_native)
+
+        val bg = adView.findViewById<LinearLayout>(R.id.bg_native)
+        if (FirebaseValue.darkTheme) {
             val colors = intArrayOf(
-                FirebaseValue.colorNativeBg.toColorInt(), FirebaseValue.colorNativeBg.toColorInt()
+                FirebaseValue.colorNativeBgDarkTheme.toColorInt(),
+                FirebaseValue.colorNativeBgDarkTheme.toColorInt()
             )
             val gd = GradientDrawable()
             gd.orientation = GradientDrawable.Orientation.LEFT_RIGHT
             gd.colors = colors
             gd.shape = GradientDrawable.RECTANGLE
             gd.cornerRadius = 20f
-            gd.setStroke(2, FirebaseValue.colorNativeBgBorderStokes.toColorInt())
+            gd.setStroke(2, Color.WHITE)
             bg.background = gd
-
+        } else {
+            if (nativeAdsBgColorChange) {
+                val colors = intArrayOf(
+                    FirebaseValue.colorNativeBg.toColorInt(),
+                    FirebaseValue.colorNativeBg.toColorInt()
+                )
+                val gd = GradientDrawable()
+                gd.orientation = GradientDrawable.Orientation.LEFT_RIGHT
+                gd.colors = colors
+                gd.shape = GradientDrawable.RECTANGLE
+                gd.cornerRadius = 20f
+                gd.setStroke(2, FirebaseValue.colorNativeBgBorderStokes.toColorInt())
+                bg.background = gd
+            }
         }
+
         populateUnifiedNativeAdView(
             ad, adView.findViewById(R.id.ad_view), adViewType
         )

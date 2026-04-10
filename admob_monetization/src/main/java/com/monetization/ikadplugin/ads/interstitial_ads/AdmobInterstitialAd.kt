@@ -12,16 +12,17 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.monetization.ikadplugin.BuildConfig
 import com.monetization.ikadplugin.ads.AdKeys
+import com.monetization.ikadplugin.ads.AdKeys.iapScreenShow
 import com.monetization.ikadplugin.ads.AdLoadingDialog
 import com.monetization.ikadplugin.ads.FirebaseValue
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
-import com.monetization.ikadplugin.BuildConfig
 
-class AdmobInterstitialAd{
+class AdmobInterstitialAd {
 
     companion object {
 
@@ -37,6 +38,7 @@ class AdmobInterstitialAd{
             }
         }
     }
+
     private val handlerAd: Handler = Handler(Looper.getMainLooper())
     private var isExitAppCall = false
     private var canRequestAd = true
@@ -100,13 +102,15 @@ class AdmobInterstitialAd{
         try {
             isHandlerRunning = false
             handlerAd.removeCallbacks(runnable)
-        } catch (ignored: Exception) {
+        } catch (_: Exception) {
         }
     }
 
     private fun closeHandler(delay: Long) {
         handlerAd.postDelayed(
-            { mInterstitialControllerListener?.onAdClosed() }, delay
+            {
+                mInterstitialControllerListener?.onAdClosed()
+            }, delay
         )
     }
 
@@ -147,7 +151,10 @@ class AdmobInterstitialAd{
         interstitialControllerListener: InterstitialControllerListener
     ) {
         mInterstitialControllerListener = interstitialControllerListener
-        if (FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(context).canRequestAds || !enable || !InternetController.getInstance(context).isInternetConnected || AdSharedPreference.getInstance(context).isAppPurchased) {
+        if (FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(context).canRequestAds || !enable || !InternetController.getInstance(
+                context
+            ).isInternetConnected || AdSharedPreference.getInstance(context).isAppPurchased
+        ) {
             closeHandler(1000)
             return
         }
@@ -243,7 +250,10 @@ class AdmobInterstitialAd{
         if (isHandlerRunning) {
             removeCallBacks()
         }
-        if (isPauseDone || AdSharedPreference.getInstance(activity).isAppPurchased || !enable || (admobInterAd == null && !InternetController.getInstance(activity).isInternetConnected) || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd) {
+        if (isPauseDone || AdSharedPreference.getInstance(activity).isAppPurchased || !enable || (admobInterAd == null && !InternetController.getInstance(
+                activity
+            ).isInternetConnected) || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd
+        ) {
             mInterstitialControllerListener?.onAdClosed()
         } else if (admobInterAd != null) {
             loadingProgress(activity)
@@ -278,7 +288,10 @@ class AdmobInterstitialAd{
 
     fun initAdMob(context: Activity, enable: Boolean) {
         isExitAppCall = false
-        if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE || !enable || !InternetController.getInstance(context).isInternetConnected) {
+        if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE || !enable || !InternetController.getInstance(
+                context
+            ).isInternetConnected
+        ) {
             return
         }
         loadNewAd(context)
@@ -290,7 +303,10 @@ class AdmobInterstitialAd{
 
     private fun loadAd(adIdReferenceName: String, mContext: Activity) {
         try {
-            if (!AdSharedPreference.getInstance(mContext).isAppPurchased && InternetController.getInstance(mContext).isInternetConnected) {
+            if (!AdSharedPreference.getInstance(mContext).isAppPurchased && InternetController.getInstance(
+                    mContext
+                ).isInternetConnected
+            ) {
                 if (admobInterAd != null) {
                     return
                 }
@@ -361,7 +377,10 @@ class AdmobInterstitialAd{
         adIdReferenceName: String, mContext: AppCompatActivity
     ) {
         try {
-            if (!AdSharedPreference.getInstance(mContext).isAppPurchased && InternetController.getInstance(mContext).isInternetConnected) {
+            if (!AdSharedPreference.getInstance(mContext).isAppPurchased && InternetController.getInstance(
+                    mContext
+                ).isInternetConnected
+            ) {
                 if (admobInterAd != null) {
                     return
                 }
@@ -431,7 +450,10 @@ class AdmobInterstitialAd{
         interstitialControllerListener: InterstitialControllerListener
     ) {
         mInterstitialControllerListener = interstitialControllerListener
-        if (FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(activity).canRequestAds || AdSharedPreference.getInstance(activity).isAppPurchased || !enable || !InternetController.getInstance(activity).isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd) {
+        if (FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(activity).canRequestAds || AdSharedPreference.getInstance(
+                activity
+            ).isAppPurchased || !enable || !InternetController.getInstance(activity).isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd
+        ) {
             if (enable) {
                 FirebaseValue.allAppInterstitialAdCount++
             }
@@ -452,7 +474,10 @@ class AdmobInterstitialAd{
         interstitialControllerListener: InterstitialControllerListener
     ) {
         mInterstitialControllerListener = interstitialControllerListener
-        if (FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(activity).canRequestAds || AdSharedPreference.getInstance(activity).isAppPurchased || !enableAds || !InternetController.getInstance(activity).isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd) {
+        if (FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(activity).canRequestAds || AdSharedPreference.getInstance(
+                activity
+            ).isAppPurchased || !enableAds || !InternetController.getInstance(activity).isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd
+        ) {
             interstitialControllerListener.onAdClosed()
         } else {
             if (admobInterAd != null) {
@@ -584,6 +609,10 @@ class AdmobInterstitialAd{
                 admobInterAd = null
                 adLoadingDialog?.dismissAlertDialog()
                 mInterstitialControllerListener?.onAdClosed()
+                if (iapScreenShow) {
+                    iapScreenShow = false
+                    mInterstitialControllerListener?.onIapShow()
+                }
                 if (FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
                     loadAd(adIdString, activity)
                 }

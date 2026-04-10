@@ -10,6 +10,7 @@ object FetchConfig {
         FirebaseValue.colorNativeCTR1 = adsConfig.colorNativeCTR1
         FirebaseValue.colorNativeCTR2 = adsConfig.colorNativeCTR2
         FirebaseValue.colorNativeBg = adsConfig.colorNativeBg
+        FirebaseValue.colorNativeBgDarkTheme = adsConfig.colorNativeBgDarkTheme
         FirebaseValue.colorNativeBgBorderStokes = adsConfig.colorNativeBgBorderStokes
         FirebaseValue.colorAdsAttribNative = adsConfig.colorAdsAttribNative
         FirebaseValue.interstitialCounterStartSplash = adsConfig.interstitialCounterStartSplash
@@ -26,6 +27,7 @@ object FetchConfig {
             adsConfig.interstitialPreloadProgressEnable
         FirebaseValue.everyNativeCtaColorChangeEnable = adsConfig.everyNativeCtaColorChangeEnable
         FirebaseValue.everyNativeCtaColorList.addAll(adsConfig.everyNativeCtaColor)
+        FirebaseValue.darkTheme = adsConfig.darkTheme
 
     }
 

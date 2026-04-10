@@ -4,4 +4,5 @@ interface InterstitialControllerListener {
     fun onAdClosed()
     fun onAdLoaded()
     fun onSplashAdViewGone()
+    fun onIapShow()
 }

@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
            FirebaseValue.colorNativeCTR1,
            FirebaseValue.colorNativeCTR2,
            FirebaseValue.colorNativeBg,
+           FirebaseValue.colorNativeBgDarkTheme,
            FirebaseValue.colorNativeBgBorderStokes,
            FirebaseValue.colorAdsAttribNative,
            FirebaseValue.interstitialCounterStartSplash,
@@ -54,7 +55,7 @@ class MainActivity : AppCompatActivity() {
                GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color)),
                GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color)),
                GradientColors(ContextCompat.getColor(this,R.color.ad_btn_color), ContextCompat.getColor(this,R.color.ad_btn_color))
-           )
+           ),false
        )
 
         FetchConfig.assignRemoteConfigValues(adsConfig)

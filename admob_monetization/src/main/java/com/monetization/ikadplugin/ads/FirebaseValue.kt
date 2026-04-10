@@ -20,11 +20,13 @@ object FirebaseValue {
     var colorNativeCTR1 = "#E74625"
     var colorNativeCTR2 = "#E74625"
     var colorNativeBg = "#EDEDED"
+    var colorNativeBgDarkTheme = "#505050"
     var colorNativeBgBorderStokes = "#505050"
     var colorAdsAttribNative = "#000000"
     var IS_INTER_SHOWING = false
     var allAppInterstitialAdCount: Int = 0
     var allAppInterstitialAdCountChange: Int = 2
     var SPLASH_TIME = 13L
+    var darkTheme = false
 
 }
