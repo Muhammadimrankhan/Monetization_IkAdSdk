@@ -116,12 +116,19 @@ class AdmobNativeAd {
         context: Context,
         enable: Boolean,
         adFrame: LinearLayout,
-        loadNewAd: Boolean = false
+        loadNewAd: Boolean = false,
+        nativeCtaColorAdPosition: Int = -1
     ) {
         if (enable && !AdSharedPreference.getInstance(context).isAppPurchased && largeAndSmallNativeAd != null) {
             largeAndSmallNativeAd?.let {
                 try {
-                    NativeViewPopulate.addLargeNativeView(context, adFrame, it, adViewType)
+                    NativeViewPopulate.addLargeNativeView(
+                        context = context,
+                        adFrame = adFrame,
+                        ad = it,
+                        adViewType = adViewType,
+                        nativeCtaColorAdPosition = nativeCtaColorAdPosition
+                    )
                     largeAndSmallNativeAd = null
                     if (loadNewAd) {
                         loadNativeAd(adIdNativeReference, adLayout, context, enable)
@@ -131,7 +138,15 @@ class AdmobNativeAd {
                 }
             }
         } else {
-            loadAndShowNativeAd(adIdNativeReference, adLayout, context, enable, adViewType)
+            loadAndShowNativeAd(
+                adIdNativeReference = adIdNativeReference,
+                adLayout = adLayout,
+                context = context,
+                enable = enable,
+                adViewType = adViewType,
+                loadNewAd = loadNewAd,
+                nativeCtaColorAdPosition = nativeCtaColorAdPosition
+            )
         }
     }
 
@@ -141,7 +156,8 @@ class AdmobNativeAd {
         context: Context,
         enable: Boolean,
         adViewType: Int,
-        loadNewAd: Boolean = false
+        loadNewAd: Boolean = false,
+        nativeCtaColorAdPosition: Int = -1
     ) {
         try {
             if (!FirebaseValue.ALL_ADS_OFF_ENABLE && GoogleMobileAdsConsentManager.getInstance(context).canRequestAds && enable && !AdSharedPreference.getInstance(context).isAppPurchased && InternetController.getInstance(context).isInternetConnected) {
@@ -167,7 +183,13 @@ class AdmobNativeAd {
                         }
                         largeAndSmallNativeAd = newNativeAd
                         largeAndSmallNativeAd?.let {
-                            NativeViewPopulate.addLargeNativeView(context, adLayout, it, adViewType)
+                            NativeViewPopulate.addLargeNativeView(
+                                context = context,
+                                adFrame = adLayout,
+                                ad = it,
+                                adViewType = adViewType,
+                                nativeCtaColorAdPosition = nativeCtaColorAdPosition
+                            )
                             largeAndSmallNativeAd = null
                             if (loadNewAd) {
                                 loadNativeAd(adIdNativeReference, adLayout, context, enable)
@@ -199,7 +221,13 @@ class AdmobNativeAd {
                     adLoader.loadAd(AdRequest.Builder().build())
                 } else {
                     largeAndSmallNativeAd?.let {
-                        NativeViewPopulate.addLargeNativeView(context, adLayout, it, adViewType)
+                        NativeViewPopulate.addLargeNativeView(
+                            context = context,
+                            adFrame = adLayout,
+                            ad = it,
+                            adViewType = adViewType,
+                            nativeCtaColorAdPosition = nativeCtaColorAdPosition
+                        )
                         largeAndSmallNativeAd = null
                         if (loadNewAd) {
                             loadNativeAd(adIdNativeReference, adLayout, context, enable)

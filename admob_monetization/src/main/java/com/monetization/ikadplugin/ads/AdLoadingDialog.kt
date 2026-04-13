@@ -10,7 +10,7 @@ import androidx.core.graphics.drawable.toDrawable
 
 class AdLoadingDialog(private val activity: Activity?) {
     private var alertDialog1: AlertDialog? = null
-    fun showAlertDialog(activity: Activity?) {
+    fun showAlertDialog() {
         try {
             if (activity != null && !activity.isFinishing && !activity.isDestroyed) {
                 if (!alertDialog1!!.isShowing) {
@@ -21,16 +21,16 @@ class AdLoadingDialog(private val activity: Activity?) {
         }
     }
 
-    fun dismissAlertDialog(activity: Activity?) {
-        try {
-            if (activity != null && !activity.isFinishing && !activity.isDestroyed) {
-                if (alertDialog1!!.isShowing) {
-                    alertDialog1?.dismiss()
-                }
-            }
-        } catch (ignored: Exception) {
-        }
-    }
+//    fun dismissAlertDialog(activity: Activity?) {
+//        try {
+//            if (activity != null && !activity.isFinishing && !activity.isDestroyed) {
+//                if (alertDialog1!!.isShowing) {
+//                    alertDialog1?.dismiss()
+//                }
+//            }
+//        } catch (ignored: Exception) {
+//        }
+//    }
     fun dismissAlertDialog() {
         try {
             if (activity != null && !activity.isFinishing && !activity.isDestroyed) {
@@ -64,7 +64,7 @@ class AdLoadingDialog(private val activity: Activity?) {
                 )
             }
 
-        } catch (ignored: Exception) {
+        } catch (_: Exception) {
         }
     }
 }

@@ -593,7 +593,7 @@ class AdmobInterstitialAd {
         adLoadingDialog?.dismissAlertDialog()
         adLoadingDialog = null
         adLoadingDialog = AdLoadingDialog(activity)
-        adLoadingDialog?.showAlertDialog(activity)
+        adLoadingDialog?.showAlertDialog()
     }
 
     private fun setAdmobFullScreen(

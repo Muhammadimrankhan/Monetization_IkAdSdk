@@ -58,6 +58,44 @@ Call this after fetching values from Firebase:
 
 FetchConfig.assignRemoteConfigValues(adsConfig)
 
+🎨 Native CTA gradient (per-position)
+
+Previously the SDK used `everyNativeCtaColor.random()` when `everyNativeCtaColorChangeEnable = true`.
+Now you can also control which CTA gradient is used per native ad “position” (index).
+
+Example (minimum 10 gradients):
+
+val adsConfig = AdsConfig(
+    everyNativeCtaColorChangeEnable = true,
+    everyNativeCtaColor = listOf(
+        GradientColors(Color.parseColor("#FF00C6FF"), Color.parseColor("#FF0072FF")),
+        GradientColors(Color.parseColor("#FF7F00FF"), Color.parseColor("#FFE100FF")),
+        GradientColors(Color.parseColor("#FFFF512F"), Color.parseColor("#FFDD2476")),
+        GradientColors(Color.parseColor("#FF11998E"), Color.parseColor("#FF38EF7D")),
+        GradientColors(Color.parseColor("#FFFC4A1A"), Color.parseColor("#FFF7B733")),
+        GradientColors(Color.parseColor("#FF1D4350"), Color.parseColor("#FFA43931")),
+        GradientColors(Color.parseColor("#FF232526"), Color.parseColor("#FF414345")),
+        GradientColors(Color.parseColor("#FF56AB2F"), Color.parseColor("#FFA8E063")),
+        GradientColors(Color.parseColor("#FF614385"), Color.parseColor("#FF516395")),
+        GradientColors(Color.parseColor("#FF2193B0"), Color.parseColor("#FF6DD5ED"))
+    )
+)
+
+When showing a native ad, pass `nativeAdPosition`:
+
+IkAdSdk.nativeController.populateNativeAd(
+    adLayout = nativeContainer,
+    adViewType = 3,
+    adIdNativeReference = "home_native",
+    context = this,
+    enable = true,
+    adFrame = nativeContainer,
+    nativeAdPosition = 0
+)
+
+If `nativeAdPosition` is `-1` (default), the SDK still uses a random gradient.
+If `nativeAdPosition` is `>= 0`, it uses `everyNativeCtaColor[nativeAdPosition % everyNativeCtaColor.size]`.
+
 
 📡 Ad Unit Configuration
 

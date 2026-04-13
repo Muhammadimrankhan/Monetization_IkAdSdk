@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleObserver
@@ -47,7 +48,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     private var openAdEnable = true
     private var adRef = ""
     private var adLoadingDialog: AdLoadingDialog? = null
-    var appContext: Context? = null
+    private var appContext: Context? = null
 
 
     fun initOpenAd(
@@ -56,10 +57,12 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
         this.adRef = adRef
         this.appContext = context
         this.openAdEnable = openAdEnable
-        try {
+        runCatching {
             ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-        } catch (_: Exception) {
+        }.onFailure {
+            Log.e("OpenAd", "Failed to add lifecycle observer", it)
         }
+
     }
 
     override fun onStart(owner: LifecycleOwner) {
@@ -77,9 +80,10 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     }
 
     private fun fetchAd() {
+        val ctx = appContext ?: return
         if (FirebaseValue.ALL_ADS_OFF_ENABLE || isAdAvailable || !InternetController.getInstance(
-                appContext!!
-            ).isInternetConnected || AdSharedPreference.getInstance(appContext!!).isAppPurchased || AdKeys.IS_APP_PAUSE
+                ctx
+            ).isInternetConnected || AdSharedPreference.getInstance(ctx).isAppPurchased || AdKeys.IS_APP_PAUSE
         ) {
             return
         }
@@ -88,11 +92,11 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
         }
         canRequestAd = false
         if (BuildConfig.DEBUG) {
-            Toast.makeText(appContext!!, "Open Ad Called", Toast.LENGTH_SHORT).show()
+            Toast.makeText(ctx, "Open Ad Called", Toast.LENGTH_SHORT).show()
         }
         val adId = FetchConfig.getOpenAppAdId(adRef)
         AppOpenAd.load(
-            appContext!!,
+            ctx,
             adId,
             AdRequest.Builder().build(),
             object : AppOpenAd.AppOpenAdLoadCallback() {
@@ -100,7 +104,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                     super.onAdLoaded(appOpenAd)
                     canRequestAd = true
                     if (BuildConfig.DEBUG) {
-                        Toast.makeText(appContext!!, "Open Ad Loaded", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(ctx, "Open Ad Loaded", Toast.LENGTH_SHORT).show()
                     }
                     mAppOpenAd = appOpenAd
                     loadTime = Date().time
@@ -111,7 +115,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                     canRequestAd = true
                     mAppOpenAd = null
                     if (BuildConfig.DEBUG) {
-                        Toast.makeText(appContext!!, "Open Ad failed", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(ctx, "Open Ad failed", Toast.LENGTH_SHORT).show()
                     }
                 }
             })
@@ -121,14 +125,14 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
         try {
             hideProgress(activity)
             adLoadingDialog = AdLoadingDialog(activity)
-            adLoadingDialog?.showAlertDialog(activity)
+            adLoadingDialog?.showAlertDialog()
         } catch (_: Exception) {
         }
     }
 
     private fun hideProgress(activity: Activity) {
         try {
-            adLoadingDialog?.dismissAlertDialog(activity)
+            adLoadingDialog?.dismissAlertDialog()
         } catch (ignored: Exception) {
         }
     }

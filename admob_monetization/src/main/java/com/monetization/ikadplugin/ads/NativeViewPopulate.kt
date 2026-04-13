@@ -28,7 +28,10 @@ import com.monetization.ikadplugin.ads.NativeAdLayouts.getNativeAdLayout
 
 object NativeViewPopulate {
     private fun populateUnifiedNativeAdView(
-        nativeAd: NativeAd, adView: NativeAdView, adViewType: Int
+        nativeAd: NativeAd,
+        adView: NativeAdView,
+        adViewType: Int,
+        nativeCtaColorAdPosition: Int
     ) {
         if (adViewType >= 3) {
             val mediaView = adView.findViewById<MediaView>(R.id.ad_media)
@@ -62,18 +65,21 @@ object NativeViewPopulate {
         adView.iconView = adView.findViewById(R.id.ad_app_icon)
 //        adView.callToActionView = button
         if (FirebaseValue.everyNativeCtaColorChangeEnable) {
-            val gradient = everyNativeCtaColorList.random()
-            val colors = intArrayOf(gradient.start, gradient.end)
-            val gd = GradientDrawable()
-            gd.orientation = GradientDrawable.Orientation.LEFT_RIGHT
-            gd.colors = colors
-            gd.shape = GradientDrawable.RECTANGLE
-            if (nativeButtonRectangle) {
-                gd.cornerRadius = 10f
-            } else {
-                gd.cornerRadius = 80f
+            val gradient = when {
+                everyNativeCtaColorList.isEmpty() -> null
+                nativeCtaColorAdPosition >= 0 -> everyNativeCtaColorList[nativeCtaColorAdPosition % everyNativeCtaColorList.size]
+                else -> everyNativeCtaColorList.randomOrNull()
             }
-            button.background = gd
+            if (gradient != null) {
+                val colors = intArrayOf(gradient.start, gradient.end)
+                val gd = GradientDrawable().apply {
+                    orientation = GradientDrawable.Orientation.LEFT_RIGHT
+                    this.colors = colors
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = if (nativeButtonRectangle) 10f else 80f
+                }
+                button.background = gd
+            }
         } else {
             if (FirebaseValue.nativeButtonThemeColorChange) {
                 val color = FirebaseValue.colorNativeCTR1.toColorInt()
@@ -127,7 +133,11 @@ object NativeViewPopulate {
     }
 
     fun addLargeNativeView(
-        context: Context, adFrame: LinearLayout, ad: NativeAd, adViewType: Int
+        context: Context,
+        adFrame: LinearLayout,
+        ad: NativeAd,
+        adViewType: Int,
+        nativeCtaColorAdPosition: Int = -1
     ) {
         val adView = getNativeAdLayout(
             adViewType, context
@@ -169,7 +179,10 @@ object NativeViewPopulate {
         }
 
         populateUnifiedNativeAdView(
-            ad, adView.findViewById(R.id.ad_view), adViewType
+            ad,
+            adView.findViewById(R.id.ad_view),
+            adViewType,
+            nativeCtaColorAdPosition
         )
 
         adFrame.visibility = View.VISIBLE

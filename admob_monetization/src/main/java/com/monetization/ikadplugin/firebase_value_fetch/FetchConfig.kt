@@ -5,6 +5,7 @@ import com.monetization.ikadplugin.ads_id.NetworkIdConfig
 
 object FetchConfig {
     fun assignRemoteConfigValues(adsConfig: AdsConfig) {
+        FirebaseValue.everyNativeCtaColorList.clear()
         FirebaseValue.allAppInterstitialAdCountChange = adsConfig.allAppInterstitialAdCountChange
         FirebaseValue.SPLASH_TIME = adsConfig.splashTime
         FirebaseValue.colorNativeCTR1 = adsConfig.colorNativeCTR1
