@@ -1,6 +1,7 @@
 package com.monetization.ikadplugin.network_instance
 
 import android.app.Activity
+import com.facebook.ads.AudienceNetworkAds
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.RequestConfiguration
 import com.monetization.ikadplugin.BuildConfig
@@ -81,6 +82,18 @@ object IkAdSdk {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     MobileAds.initialize(context)
+                } catch (_: Exception) {
+                } catch (_: ClassNotFoundException) {
+                } catch (_: NoClassDefFoundError) {
+                } catch (_: NoSuchMethodError) {
+                } catch (_: VerifyError) {
+                } catch (_: OutOfMemoryError) {
+                }
+            }
+
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    AudienceNetworkAds.initialize(context)
                 } catch (_: Exception) {
                 } catch (_: ClassNotFoundException) {
                 } catch (_: NoClassDefFoundError) {
