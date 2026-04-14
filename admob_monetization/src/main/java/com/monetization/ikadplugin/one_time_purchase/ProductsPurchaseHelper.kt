@@ -31,8 +31,6 @@ data class PurchasePriceModel(val price: String = "")
 
 class ProductsPurchaseHelper(
     private val context: Context,
-    private val internetController: InternetController,
-    private val isAdPurchase: AdSharedPreference,
 ) : PurchasesUpdatedListener {
 
     private val _productPriceFlow = MutableStateFlow(PurchasePriceModel())
@@ -53,7 +51,7 @@ class ProductsPurchaseHelper(
         } else billingClient.isReady
 
     private fun queryProductSkuForPurchase() {
-        if (!internetController.isInternetConnected) {
+        if (!InternetController.getInstance(context).isInternetConnected) {
             return
         }
         if (isBillingClientDead) {
@@ -116,7 +114,7 @@ class ProductsPurchaseHelper(
                 }
     }*/
     fun purchaseProduct(context: Activity) {
-        if (!internetController.isInternetConnected) {
+        if (!InternetController.getInstance(context).isInternetConnected) {
             Toast.makeText(context, "Internet not available", Toast.LENGTH_SHORT).show()
             return
         }
@@ -148,7 +146,7 @@ class ProductsPurchaseHelper(
     }
 
     private fun checkProductPurchaseHistory() {
-        if (!internetController.isInternetConnected) {
+        if (!InternetController.getInstance(context).isInternetConnected) {
             return
         }
         if (isBillingClientDead) {
@@ -176,14 +174,14 @@ class ProductsPurchaseHelper(
     }
 
     private fun appNotPurchased() {
-        isAdPurchase.appAdPurchased = false
+        AdSharedPreference.getInstance(context).appAdPurchased = false
         CoroutineScope(Dispatchers.IO).launch {
             _appPurchased.send(false)
         }
     }
 
     private fun appPurchased() {
-        isAdPurchase.appAdPurchased = true
+        AdSharedPreference.getInstance(context).appAdPurchased = true
         CoroutineScope(Dispatchers.IO).launch {
             _appPurchased.send(true)
         }

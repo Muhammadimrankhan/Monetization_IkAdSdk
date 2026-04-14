@@ -74,6 +74,7 @@ object IkAdSdk {
             initMobileSdk(context)
             consentCallback.invoke(consentManager.canRequestAds)
         }
+
     }
 
     fun initMobileSdk(context: Activity) {

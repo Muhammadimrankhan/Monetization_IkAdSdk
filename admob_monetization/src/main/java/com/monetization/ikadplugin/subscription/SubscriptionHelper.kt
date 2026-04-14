@@ -35,7 +35,6 @@ data class SubscriptionModel(val productsList: Map<String, ProductDetails> = emp
 
 class SubscriptionHelper(
     private val context: Context,
-    private val isAdPurchase: AdSharedPreference,
     private val coroutineScope: CoroutineScope,
 ) : PurchasesUpdatedListener {
     private var isBillingReady: Boolean = false
@@ -183,7 +182,7 @@ class SubscriptionHelper(
     private fun resetAllPurchases() {
         subscribeProductToken = ""
         SUBSCRIBED_PRODUCT_ID = ""
-        isAdPurchase.isSubscription = false
+        AdSharedPreference.getInstance(context).appAdPurchased = false
     }
 
     private fun getSku(skuList: MutableList<String>): String {
@@ -238,7 +237,7 @@ class SubscriptionHelper(
     fun setSubscribed(purchase: Purchase) {
         SUBSCRIBED_PRODUCT_ID = getSku(purchase.products)
         subscribeProductToken = purchase.purchaseToken
-        isAdPurchase.isSubscription = true
+        AdSharedPreference.getInstance(context).appAdPurchased = true
     }
 
     override fun onPurchasesUpdated(billingResult: BillingResult, list: List<Purchase>?) {
