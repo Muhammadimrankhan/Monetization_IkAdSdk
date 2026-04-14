@@ -11,6 +11,7 @@ import com.monetization.ikadplugin.ads_id.NetworkIdConfig
 import com.monetization.ikadplugin.firebase_value_fetch.AdsConfig
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.firebase_value_fetch.GradientColors
+import androidx.core.graphics.toColorInt
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,16 +45,16 @@ class MainActivity : AppCompatActivity() {
            FirebaseValue.INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE,
            true,
            listOf(
-               GradientColors(Color.parseColor("#FF00C6FF"), Color.parseColor("#FF0072FF")),
-               GradientColors(Color.parseColor("#FF7F00FF"), Color.parseColor("#FFE100FF")),
-               GradientColors(Color.parseColor("#FFFF512F"), Color.parseColor("#FFDD2476")),
-               GradientColors(Color.parseColor("#FF11998E"), Color.parseColor("#FF38EF7D")),
-               GradientColors(Color.parseColor("#FFFC4A1A"), Color.parseColor("#FFF7B733")),
-               GradientColors(Color.parseColor("#FF1D4350"), Color.parseColor("#FFA43931")),
-               GradientColors(Color.parseColor("#FF232526"), Color.parseColor("#FF414345")),
-               GradientColors(Color.parseColor("#FF56AB2F"), Color.parseColor("#FFA8E063")),
-               GradientColors(Color.parseColor("#FF614385"), Color.parseColor("#FF516395")),
-               GradientColors(Color.parseColor("#FF2193B0"), Color.parseColor("#FF6DD5ED"))
+               GradientColors("#FF00C6FF".toColorInt(), "#FF0072FF".toColorInt()),
+               GradientColors("#FF7F00FF".toColorInt(), "#FFE100FF".toColorInt()),
+               GradientColors("#FFFF512F".toColorInt(), "#FFDD2476".toColorInt()),
+               GradientColors("#FF11998E".toColorInt(), "#FF38EF7D".toColorInt()),
+               GradientColors("#FFFC4A1A".toColorInt(), "#FFF7B733".toColorInt()),
+               GradientColors("#FF1D4350".toColorInt(), "#FFA43931".toColorInt()),
+               GradientColors("#FF232526".toColorInt(), "#FF414345".toColorInt()),
+               GradientColors("#FF56AB2F".toColorInt(), "#FFA8E063".toColorInt()),
+               GradientColors("#FF614385".toColorInt(), "#FF516395".toColorInt()),
+               GradientColors("#FF2193B0".toColorInt(), "#FF6DD5ED".toColorInt())
            ),
            false
        )
