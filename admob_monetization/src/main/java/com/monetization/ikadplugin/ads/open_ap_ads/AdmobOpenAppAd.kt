@@ -20,6 +20,8 @@ import com.monetization.ikadplugin.BuildConfig
 import com.monetization.ikadplugin.ads.AdKeys
 import com.monetization.ikadplugin.ads.AdLoadingDialog
 import com.monetization.ikadplugin.ads.FirebaseValue
+import com.monetization.ikadplugin.ads.interstitial_ads.InterstitialControllerListener
+import com.monetization.ikadplugin.ads.native_ads.AdControllerListener
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.network_instance.IkAdSdk.getCurrentActivity
@@ -50,16 +52,20 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     private var adLoadingDialog: AdLoadingDialog? = null
     private var appContext: Context? = null
 
+    private var openAdControllerListener: OpenAdControllerListener? = null
 
     fun initOpenAd(
-        context: Context, adRef: String, openAdEnable: Boolean
+        context: Context, adRef: String, openAdEnable: Boolean,
+        openAdControllerListener: OpenAdControllerListener
     ) {
+        this.openAdControllerListener = openAdControllerListener
         this.adRef = adRef
         this.appContext = context
         this.openAdEnable = openAdEnable
         runCatching {
             ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         }.onFailure {
+            openAdControllerListener.onAdInitFailed("Failed to add lifecycle observer")
             Log.e("OpenAd", "Failed to add lifecycle observer", it)
         }
 
@@ -68,32 +74,46 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     override fun onStart(owner: LifecycleOwner) {
         super.onStart(owner)
         try {
+            if(appContext==null){
+                openAdControllerListener?.onContextNotFound("appContext_is_null")
+            }
             AdKeys.IS_APP_PAUSE = false
-            if (AdKeys.canShowOpenAd && getCurrentActivity() != null && !AdSharedPreference.getInstance(
+            if (AdKeys.canShowOpenAd && !AdSharedPreference.getInstance(
                     appContext!!
                 ).isAppPurchased && openAdEnable
             ) {
-                showOpenAd()
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (getCurrentActivity() != null) {
+                        showOpenAd()
+                    } else {
+                        openAdControllerListener?.onStartActivityFailed("Activity still null after delay")
+                        Log.e("OpenAd", "Activity still null after delay")
+                    }
+                }, 300)
             }
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            openAdControllerListener?.onStartActivityException(e.printStackTrace().toString())
         }
     }
 
     private fun fetchAd() {
+        if(appContext==null){
+            openAdControllerListener?.onContextNotFound("appContext_is_null")
+        }
         val ctx = appContext ?: return
         if (FirebaseValue.ALL_ADS_OFF_ENABLE || isAdAvailable || !InternetController.getInstance(
                 ctx
             ).isInternetConnected || AdSharedPreference.getInstance(ctx).isAppPurchased || AdKeys.IS_APP_PAUSE
         ) {
+            openAdControllerListener?.onAdPurchased("purchased")
             return
         }
         if (!canRequestAd) {
             return
         }
         canRequestAd = false
-        if (BuildConfig.DEBUG) {
-            Toast.makeText(ctx, "Open Ad Called", Toast.LENGTH_SHORT).show()
-        }
+        openAdControllerListener?.onAdCalling("Open_Ad_Called")
+
         val adId = FetchConfig.getOpenAppAdId(adRef)
         AppOpenAd.load(
             ctx,
@@ -103,9 +123,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                 override fun onAdLoaded(appOpenAd: AppOpenAd) {
                     super.onAdLoaded(appOpenAd)
                     canRequestAd = true
-                    if (BuildConfig.DEBUG) {
-                        Toast.makeText(ctx, "Open Ad Loaded", Toast.LENGTH_SHORT).show()
-                    }
+                    openAdControllerListener?.onAdLoaded("Open_Ad_Loaded")
                     mAppOpenAd = appOpenAd
                     loadTime = Date().time
                 }
@@ -114,23 +132,21 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                     super.onAdFailedToLoad(loadAdError)
                     canRequestAd = true
                     mAppOpenAd = null
-                    if (BuildConfig.DEBUG) {
-                        Toast.makeText(ctx, "Open Ad failed", Toast.LENGTH_SHORT).show()
-                    }
+                    openAdControllerListener?.onAdFailed("Open_Ad_Failed")
                 }
             })
     }
 
     private fun hideShowProgress(activity: Activity) {
         try {
-            hideProgress(activity)
+            hideProgress()
             adLoadingDialog = AdLoadingDialog(activity)
             adLoadingDialog?.showAlertDialog()
         } catch (_: Exception) {
         }
     }
 
-    private fun hideProgress(activity: Activity) {
+    private fun hideProgress() {
         try {
             adLoadingDialog?.dismissAlertDialog()
         } catch (ignored: Exception) {
@@ -183,7 +199,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                     super.onAdDismissedFullScreenContent()
                     mAppOpenAd = null
                     AdKeys.isShowingOpenAd = false
-                    hideProgress(mContext)
+                    hideProgress()
                     callback.invoke()
                 }
 
@@ -195,7 +211,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
 
                 override fun onAdFailedToShowFullScreenContent(p0: AdError) {
                     super.onAdFailedToShowFullScreenContent(p0)
-                    hideProgress(mContext)
+                    hideProgress()
                     mAppOpenAd = null
                     callback.invoke()
                     AdKeys.isShowingOpenAd = false
