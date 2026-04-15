@@ -2,6 +2,12 @@ package com.monetization.ikadplugin.firebase_value_fetch
 
 import com.monetization.ikadplugin.ads.FirebaseValue
 import com.monetization.ikadplugin.ads_id.NetworkIdConfig
+import com.monetization.ikadplugin.pref.OneTimePurchaseConfig
+import com.monetization.ikadplugin.subscription.SubscriptionConfig
+import com.monetization.ikadplugin.subscription.SubscriptionConstant.MONTHLY_SUBSCRIPTION_ID
+import com.monetization.ikadplugin.subscription.SubscriptionConstant.PRODUCT_ID
+import com.monetization.ikadplugin.subscription.SubscriptionConstant.WEEKLY_SUBSCRIPTION_ID
+import com.monetization.ikadplugin.subscription.SubscriptionConstant.YEARLY_SUBSCRIPTION_ID
 
 object FetchConfig {
     fun assignRemoteConfigValues(adsConfig: AdsConfig) {
@@ -30,6 +36,16 @@ object FetchConfig {
         FirebaseValue.everyNativeCtaColorList.addAll(adsConfig.everyNativeCtaColor)
         FirebaseValue.darkTheme = adsConfig.darkTheme
 
+    }
+
+    fun assignOneTimeRemoveAdsConfig(oneTimePurchaseConfig: OneTimePurchaseConfig) {
+        PRODUCT_ID = oneTimePurchaseConfig.productKey
+    }
+
+    fun assignSubscriptionRemoveAdsConfig(subscriptionConfig: SubscriptionConfig) {
+        WEEKLY_SUBSCRIPTION_ID = subscriptionConfig.sub_week_Key
+        MONTHLY_SUBSCRIPTION_ID = subscriptionConfig.sub_monthly_Key
+        YEARLY_SUBSCRIPTION_ID = subscriptionConfig.sub_yearly_Key
     }
 
     private var networkIdConfig: NetworkIdConfig = NetworkIdConfig(

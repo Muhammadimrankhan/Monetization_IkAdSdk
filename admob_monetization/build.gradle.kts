@@ -43,7 +43,7 @@ android {
     }
 }
 group = "com.github.Muhammadimrankhan"
-version = "0.0.7"
+version = "0.0.8"
 
 
 afterEvaluate {
@@ -53,7 +53,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.Muhammadimrankhan"
                 artifactId = "Monetization_IkAdSdk"
-                version = "0.0.7"
+                version = "0.0.8"
             }
         }
     }
@@ -62,7 +62,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.google.android.material:material:1.13.0")
-    implementation("com.google.android.gms:play-services-ads:25.1.0")
+    implementation("com.google.android.gms:play-services-ads:25.2.0")
     implementation("androidx.lifecycle:lifecycle-process:2.10.0")
     implementation("com.android.billingclient:billing-ktx:8.3.0")
     //Text and Size-ing Libs
