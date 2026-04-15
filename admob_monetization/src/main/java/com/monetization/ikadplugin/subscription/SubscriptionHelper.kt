@@ -213,7 +213,7 @@ class SubscriptionHelper(
         val context = requireContext()
         subscribeProductToken = ""
         SUBSCRIBED_PRODUCT_ID = ""
-        AdSharedPreference.getInstance(context).appAdPurchased = false
+        AdSharedPreference.getInstance(context).isSubscription = false
     }
 
     private fun getSku(skuList: MutableList<String>): String {
@@ -269,7 +269,7 @@ class SubscriptionHelper(
         val context = requireContext()
         SUBSCRIBED_PRODUCT_ID = getSku(purchase.products)
         subscribeProductToken = purchase.purchaseToken
-        AdSharedPreference.getInstance(context).appAdPurchased = true
+        AdSharedPreference.getInstance(context).isSubscription = true
     }
 
     override fun onPurchasesUpdated(billingResult: BillingResult, list: List<Purchase>?) {
