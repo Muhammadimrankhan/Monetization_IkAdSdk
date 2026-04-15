@@ -5,6 +5,7 @@ import android.app.Application
 import android.os.Bundle
 import com.monetization.ikadplugin.ads.AdKeys.IS_APP_PAUSE
 import com.monetization.ikadplugin.ads.AdKeys.canShowOpenAd
+import com.monetization.ikadplugin.ads.open_ap_ads.OpenAdControllerListener
 import com.monetization.ikadplugin.network_instance.IkAdSdk
 
 class IkAdPluginAppClass : Application(), Application.ActivityLifecycleCallbacks {
@@ -12,46 +13,41 @@ class IkAdPluginAppClass : Application(), Application.ActivityLifecycleCallbacks
     private var isAdsInitialized = false
     private var isOpenAdInitialized = false
 
-    fun initOpenAd(adRef: String, enable: Boolean) {
+    fun initOpenAd(
+        adRef: String, enable: Boolean,
+        openAdControllerListener: OpenAdControllerListener
+    ) {
         if (!isOpenAdInitialized) {
             isOpenAdInitialized = true
-            IkAdSdk.openAppAdController.initOpenAd(this, adRef, enable)
+            IkAdSdk.openAppAdController.initOpenAd(this, adRef, enable, openAdControllerListener)
         }
     }
-
 
     fun initFirst() {
         if (!isAdsInitialized) {
             isAdsInitialized = true
-
-            try {
-                registerActivityLifecycleCallbacks(this)
-            } catch (_: Exception) {
-            }
+            registerActivityLifecycleCallbacks(this)
         }
     }
-
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         IkAdSdk.setCurrentActivity(activity)
     }
 
-    private fun checkActivity() {
-        // initialize those Activities which you not want to show open app ads via & operator use add more
-        canShowOpenAd = IkAdSdk.getCurrentActivity() != MainActivity::class.java
+    private fun checkActivity(activity: Activity) {
+        canShowOpenAd = activity !is MainActivity
     }
 
     override fun onActivityStarted(activity: Activity) {
         IkAdSdk.setCurrentActivity(activity)
-        checkActivity()
+        checkActivity(activity)
     }
 
     override fun onActivityResumed(activity: Activity) {
         IS_APP_PAUSE = false
         IkAdSdk.setCurrentActivity(activity)
-        checkActivity()
+        checkActivity(activity)
     }
-
 
     override fun onActivityPaused(activity: Activity) {
         IS_APP_PAUSE = true
@@ -61,13 +57,13 @@ class IkAdPluginAppClass : Application(), Application.ActivityLifecycleCallbacks
     }
 
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
-
     }
 
     override fun onActivityDestroyed(activity: Activity) {
-        IkAdSdk.setCurrentActivity(null)
+        if (IkAdSdk.getCurrentActivity() === activity) {
+            IkAdSdk.setCurrentActivity(null)
+        }
         canShowOpenAd = true
         IS_APP_PAUSE = false
     }
-
 }
