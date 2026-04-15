@@ -29,10 +29,33 @@ import kotlinx.coroutines.launch
 
 data class PurchasePriceModel(val price: String = "")
 
-class ProductsPurchaseHelper(
-    private val context: Context,
-) : PurchasesUpdatedListener {
+class ProductsPurchaseHelper : PurchasesUpdatedListener {
+    private lateinit var appContext: Context
+    companion object {
+        @Volatile
+        private var INSTANCE: ProductsPurchaseHelper? = null
 
+        fun getInstance(): ProductsPurchaseHelper {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: ProductsPurchaseHelper().also {
+                    INSTANCE = it
+                }
+            }
+        }
+    }
+    fun initBilling(context: Context) {
+        if (!::appContext.isInitialized) {
+            appContext = context.applicationContext
+            connectBilling()
+        }
+    }
+
+    private fun requireContext(): Context {
+        check(::appContext.isInitialized) {
+            "ProductsPurchaseHelper is not initialized. Call ProductsPurchaseHelper.getInstance().init(context) first."
+        }
+        return appContext
+    }
     private val _productPriceFlow = MutableStateFlow(PurchasePriceModel())
     val productPriceFlow = _productPriceFlow.asStateFlow()
 
@@ -51,6 +74,7 @@ class ProductsPurchaseHelper(
         } else billingClient.isReady
 
     private fun queryProductSkuForPurchase() {
+        val context = requireContext()
         if (!InternetController.getInstance(context).isInternetConnected) {
             return
         }
@@ -136,9 +160,9 @@ class ProductsPurchaseHelper(
         }
     }
 
-    fun checkHistoryIfSkuNull() {
+    fun checkHistoryIfSkuNull(context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
-            initBilling()
+            initBilling(context)
             if (purchaseSku == null) {
                 checkProductPurchaseHistory()
             }
@@ -146,6 +170,7 @@ class ProductsPurchaseHelper(
     }
 
     private fun checkProductPurchaseHistory() {
+        val context = requireContext()
         if (!InternetController.getInstance(context).isInternetConnected) {
             return
         }
@@ -174,6 +199,7 @@ class ProductsPurchaseHelper(
     }
 
     private fun appNotPurchased() {
+        val context = requireContext()
         AdSharedPreference.getInstance(context).appAdPurchased = false
         CoroutineScope(Dispatchers.IO).launch {
             _appPurchased.send(false)
@@ -181,6 +207,7 @@ class ProductsPurchaseHelper(
     }
 
     private fun appPurchased() {
+        val context = requireContext()
         AdSharedPreference.getInstance(context).appAdPurchased = true
         CoroutineScope(Dispatchers.IO).launch {
             _appPurchased.send(true)
@@ -229,12 +256,13 @@ class ProductsPurchaseHelper(
         }
     }
 
-    init {
-        initBilling()
-    }
+   /* init {
+        connectBilling()
+    }*/
 
-    fun initBilling() {
+    private fun connectBilling() {
         try {
+            val context = requireContext()
             if (!::billingClient.isInitialized) {
                 billingClient =
                     BillingClient.newBuilder(context).setListener(this).enablePendingPurchases(

@@ -508,6 +508,45 @@ class AdmobInterstitialAd {
         }
     }
 
+
+    fun showInterstitialIfSplashFail(
+        adIdString: String,
+        activity: Activity,
+        enableAds: Boolean,
+        interstitialControllerListener: InterstitialControllerListener
+    ) {
+        mInterstitialControllerListener = interstitialControllerListener
+        if (FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(activity).canRequestAds || AdSharedPreference.getInstance(
+                activity
+            ).isAppPurchased || !enableAds || !InternetController.getInstance(activity).isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd
+        ) {
+            interstitialControllerListener.onAdClosed()
+        } else {
+            if (admobInterAd != null) {
+                if (FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
+                    if (FirebaseValue.INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE) {
+                        loadingProgress(activity)
+                        handlerAd.postDelayed({
+                            setAdmobFullScreen(activity, false, adIdString)
+                        }, 1000)
+                    } else {
+                        setAdmobFullScreen(activity, false, adIdString)
+                    }
+                } else {
+                    loadingProgress(activity)
+                    handlerAd.postDelayed({
+                        setAdmobFullScreen(activity, false, adIdString)
+                    }, 1000)
+                }
+            } else {
+                canRequestAd = true
+                admobInterAd = null
+                mInterstitialControllerListener?.onAdClosed()
+            }
+
+        }
+    }
+
     fun android15Support() {
         if (Build.VERSION.SDK_INT >= 35) {
             admobInterAd?.setImmersiveMode(true)

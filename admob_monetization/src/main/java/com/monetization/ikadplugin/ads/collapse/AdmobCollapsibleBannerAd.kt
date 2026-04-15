@@ -173,6 +173,7 @@ class AdmobCollapsibleBannerAd{
                     }
 
                     adFrame.removeAllViews()
+                    adFrame.visibility = View.VISIBLE
                     adFrame.addView(it)
 
                     bannerAd = null
@@ -184,9 +185,7 @@ class AdmobCollapsibleBannerAd{
                 } catch (_: Exception) {
                 }
             }
-
         } else {
-
             loadAndShowAd(adReference, activity, enable, adFrame)
         }
     }
@@ -202,10 +201,10 @@ class AdmobCollapsibleBannerAd{
 
             if (FirebaseValue.ALL_ADS_OFF_ENABLE ||
                 !enable ||
+                !GoogleMobileAdsConsentManager.getInstance(activity).canRequestAds ||
                 AdSharedPreference.getInstance(activity).isAppPurchased ||
                 !InternetController.getInstance(activity).isInternetConnected
             ) {
-
                 adFrame.removeAllViews()
                 adFrame.visibility = View.GONE
                 return
@@ -231,18 +230,14 @@ class AdmobCollapsibleBannerAd{
             adView.adListener = object : AdListener() {
 
                 override fun onAdLoaded() {
-
                     canRequestAd = true
-
                     adFrame.visibility = View.VISIBLE
                     adFrame.removeAllViews()
                     adFrame.addView(adView)
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
-
                     canRequestAd = true
-
                     adFrame.removeAllViews()
                     adFrame.visibility = View.GONE
                 }
@@ -251,14 +246,12 @@ class AdmobCollapsibleBannerAd{
             adView.loadAd(request)
 
         } catch (e: Exception) {
-
             adFrame.removeAllViews()
             adFrame.visibility = View.GONE
         }
     }
 
     fun destroy() {
-
         bannerAd?.destroy()
         bannerAd = null
     }

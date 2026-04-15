@@ -18,6 +18,8 @@ import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
 import com.monetization.ikadplugin.BuildConfig
+import com.monetization.ikadplugin.ads.NativeShimmerEffect.addShimmerLayout
+import com.monetization.ikadplugin.ads.interstitial_ads.InterstitialControllerListener
 
 class AdmobNativeAd {
 
@@ -45,31 +47,30 @@ class AdmobNativeAd {
         return largeAndSmallNativeAd != null
     }
 
-    fun loadNativeAd(
-        adIdNativeReference: String, adLayout: LinearLayout, context: Context, enable: Boolean
+    fun preLoadNativeAd(
+        adIdNativeReference: String, adLayout: LinearLayout, context: Context, enable: Boolean,
+        adControllerListener: AdControllerListener
     ) {
         try {
-            if (!FirebaseValue.ALL_ADS_OFF_ENABLE && GoogleMobileAdsConsentManager.getInstance(context).canRequestAds && enable && !AdSharedPreference.getInstance(context).isAppPurchased && InternetController.getInstance(context).isInternetConnected) {
+            if (!FirebaseValue.ALL_ADS_OFF_ENABLE && GoogleMobileAdsConsentManager.getInstance(
+                    context
+                ).canRequestAds && enable && !AdSharedPreference.getInstance(context).isAppPurchased && InternetController.getInstance(
+                    context
+                ).isInternetConnected
+            ) {
                 if (largeAndSmallNativeAd == null) {
                     if (!canRequestAd) {
                         return
                     }
                     canRequestAd = false
-                    if (BuildConfig.DEBUG) {
-                        Toast.makeText(context, "large native ad calling", Toast.LENGTH_SHORT)
-                            .show()
-                    }
+                    adControllerListener.onAdCalling("native_ad_calling")
                     val adId = FetchConfig.getNativeId(adIdNativeReference)
                     val builder = AdLoader.Builder(
                         context, adId
                     )
                     builder.forNativeAd { newNativeAd: NativeAd ->
                         canRequestAd = true
-                        if (BuildConfig.DEBUG) {
-                            Toast.makeText(
-                                context, "native ad loaded", Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        adControllerListener.onAdLoaded("native_ad_loaded")
                         largeAndSmallNativeAd = newNativeAd
                     }
                     builder.withNativeAdOptions(
@@ -83,13 +84,7 @@ class AdmobNativeAd {
                             super.onAdFailedToLoad(loadAdError)
                             canRequestAd = true
                             largeAndSmallNativeAd = null
-                            if (BuildConfig.DEBUG) {
-                                Toast.makeText(
-                                    context,
-                                    "large native load failed ==> code " + loadAdError.code,
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                            adControllerListener.onAdFailed("large native load failed ==> code " + loadAdError.code)
                             adLayout.removeAllViews()
                             adLayout.visibility = View.GONE
                         }
@@ -97,6 +92,7 @@ class AdmobNativeAd {
                     adLoader.loadAd(AdRequest.Builder().build())
                 }
             } else {
+                adControllerListener.onAdPurchased("not_eligible_for_ads")
                 adLayout.removeAllViews()
                 adLayout.visibility = View.GONE
             }
@@ -107,48 +103,56 @@ class AdmobNativeAd {
     }
 
 //    populateCallback: (Any) -> Unit
-//    populateCallback.invoke(it)
+//   populateCallback.invoke(it)
 
-    fun populateNativeAd(
-        adLayout: LinearLayout,
-        adViewType: Int,
-        adIdNativeReference: String,
-        context: Context,
-        enable: Boolean,
-        adFrame: LinearLayout,
-        loadNewAd: Boolean = false,
-        nativeCtaColorAdPosition: Int = -1
-    ) {
-        if (enable && !AdSharedPreference.getInstance(context).isAppPurchased && largeAndSmallNativeAd != null) {
-            largeAndSmallNativeAd?.let {
-                try {
-                    NativeViewPopulate.addLargeNativeView(
-                        context = context,
-                        adFrame = adFrame,
-                        ad = it,
-                        adViewType = adViewType,
-                        nativeCtaColorAdPosition = nativeCtaColorAdPosition
-                    )
-                    largeAndSmallNativeAd = null
-                    if (loadNewAd) {
-                        loadNativeAd(adIdNativeReference, adLayout, context, enable)
-                    }
-                } catch (_: Exception) {
+      fun populateNativeAd(
+          adLayout: LinearLayout,
+          adViewType: Int,
+          adIdNativeReference: String,
+          context: Context,
+          enable: Boolean,
+          adFrame: LinearLayout,
+          loadNewAd: Boolean = false,
+          nativeCtaColorAdPosition: Int = -1,
+          adControllerListener: AdControllerListener
+      ) {
+          if (!FirebaseValue.ALL_ADS_OFF_ENABLE &&
+              GoogleMobileAdsConsentManager.getInstance(context).canRequestAds &&
+              enable &&
+              !AdSharedPreference.getInstance(context).isAppPurchased &&
+              InternetController.getInstance(context).isInternetConnected
+          )  {
+              largeAndSmallNativeAd?.let {
+                  try {
+                      adControllerListener.onAlreadyAdLoadedShow("already_load_native_ad_show")
+                      NativeViewPopulate.addLargeNativeView(
+                          context = context,
+                          adFrame = adFrame,
+                          ad = it,
+                          adViewType = adViewType,
+                          nativeCtaColorAdPosition = nativeCtaColorAdPosition
+                      )
+                      largeAndSmallNativeAd = null
+                      if (loadNewAd) {
+                          preLoadNativeAd(adIdNativeReference, adLayout, context, enable,adControllerListener)
+                      }
+                  } catch (_: Exception) {
 
-                }
-            }
-        } else {
-            loadAndShowNativeAd(
-                adIdNativeReference = adIdNativeReference,
-                adLayout = adLayout,
-                context = context,
-                enable = enable,
-                adViewType = adViewType,
-                loadNewAd = loadNewAd,
-                nativeCtaColorAdPosition = nativeCtaColorAdPosition
-            )
-        }
-    }
+                  }
+              }
+          } else {
+              loadAndShowNativeAd(
+                  adIdNativeReference = adIdNativeReference,
+                  adLayout = adLayout,
+                  context = context,
+                  enable = enable,
+                  adViewType = adViewType,
+                  loadNewAd = loadNewAd,
+                  nativeCtaColorAdPosition = nativeCtaColorAdPosition,adControllerListener
+              )
+          }
+      }
+
 
     private fun loadAndShowNativeAd(
         adIdNativeReference: String,
@@ -157,30 +161,32 @@ class AdmobNativeAd {
         enable: Boolean,
         adViewType: Int,
         loadNewAd: Boolean = false,
-        nativeCtaColorAdPosition: Int = -1
+        nativeCtaColorAdPosition: Int = -1,
+        adControllerListener: AdControllerListener
     ) {
         try {
-            if (!FirebaseValue.ALL_ADS_OFF_ENABLE && GoogleMobileAdsConsentManager.getInstance(context).canRequestAds && enable && !AdSharedPreference.getInstance(context).isAppPurchased && InternetController.getInstance(context).isInternetConnected) {
+            if (!FirebaseValue.ALL_ADS_OFF_ENABLE && GoogleMobileAdsConsentManager.getInstance(
+                    context
+                ).canRequestAds && enable && !AdSharedPreference.getInstance(context).isAppPurchased && InternetController.getInstance(
+                    context
+                ).isInternetConnected
+            ) {
                 if (largeAndSmallNativeAd == null) {
                     if (!canRequestAd) {
                         return
                     }
+                    addShimmerLayout(
+                        adLayout, adViewType, context
+                    )
                     canRequestAd = false
-                    if (BuildConfig.DEBUG) {
-                        Toast.makeText(context, "large native ad calling", Toast.LENGTH_SHORT)
-                            .show()
-                    }
+                    adControllerListener.onAdCalling("native_ad_calling")
                     val adId = FetchConfig.getNativeId(adIdNativeReference)
                     val builder = AdLoader.Builder(
                         context, adId
                     )
                     builder.forNativeAd { newNativeAd: NativeAd ->
                         canRequestAd = true
-                        if (BuildConfig.DEBUG) {
-                            Toast.makeText(
-                                context, "native ad loaded", Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        adControllerListener.onAdLoaded("native_ad_loaded")
                         largeAndSmallNativeAd = newNativeAd
                         largeAndSmallNativeAd?.let {
                             NativeViewPopulate.addLargeNativeView(
@@ -192,7 +198,7 @@ class AdmobNativeAd {
                             )
                             largeAndSmallNativeAd = null
                             if (loadNewAd) {
-                                loadNativeAd(adIdNativeReference, adLayout, context, enable)
+                                preLoadNativeAd(adIdNativeReference, adLayout, context, enable,adControllerListener)
                             }
                         }
                     }
@@ -207,13 +213,7 @@ class AdmobNativeAd {
                             super.onAdFailedToLoad(loadAdError)
                             canRequestAd = true
                             largeAndSmallNativeAd = null
-                            if (BuildConfig.DEBUG) {
-                                Toast.makeText(
-                                    context,
-                                    "large native load failed ==> code " + loadAdError.code,
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                            adControllerListener.onAdFailed("large native load failed ==> code " + loadAdError.code)
                             adLayout.removeAllViews()
                             adLayout.visibility = View.GONE
                         }
@@ -221,6 +221,9 @@ class AdmobNativeAd {
                     adLoader.loadAd(AdRequest.Builder().build())
                 } else {
                     largeAndSmallNativeAd?.let {
+                        addShimmerLayout(
+                            adLayout, adViewType, context
+                        )
                         NativeViewPopulate.addLargeNativeView(
                             context = context,
                             adFrame = adLayout,
@@ -230,9 +233,98 @@ class AdmobNativeAd {
                         )
                         largeAndSmallNativeAd = null
                         if (loadNewAd) {
-                            loadNativeAd(adIdNativeReference, adLayout, context, enable)
+                            preLoadNativeAd(adIdNativeReference, adLayout, context, enable,adControllerListener)
                         }
                     }
+                }
+            } else {
+                adControllerListener.onAdPurchased("not_eligible_for_ads")
+                adLayout.removeAllViews()
+                adLayout.visibility = View.GONE
+            }
+        } catch (e: Exception) {
+            adLayout.removeAllViews()
+            adLayout.visibility = View.GONE
+        }
+    }
+
+
+
+
+    val shownFragmentAds = HashSet<String>()
+
+    fun clearFragmentAdState(fragmentKey: String) {
+        shownFragmentAds.remove(fragmentKey)
+    }
+
+    fun clearAllFragmentAdStates() {
+        shownFragmentAds.clear()
+    }
+
+    fun populateNativeAdForFragment(
+        adLayout: LinearLayout,
+        adViewType: Int,
+        adIdNativeReference: String,
+        context: Context,
+        enable: Boolean,
+        adFrame: LinearLayout,
+        loadNewAd: Boolean = false,
+        nativeCtaColorAdPosition: Int = -1,
+        isFragmentCall: Boolean = false,
+        fragmentKey: String? = null,
+        adControllerListener: AdControllerListener
+    ) {
+        try {
+            if (!FirebaseValue.ALL_ADS_OFF_ENABLE &&
+                GoogleMobileAdsConsentManager.getInstance(context).canRequestAds &&
+                enable &&
+                !AdSharedPreference.getInstance(context).isAppPurchased &&
+                InternetController.getInstance(context).isInternetConnected
+            ) {
+
+                // Sirf fragment case me check lagana hai
+                if (isFragmentCall && !fragmentKey.isNullOrEmpty() && shownFragmentAds.contains(
+                        fragmentKey
+                    )
+                ) {
+                    return
+                }
+                if (largeAndSmallNativeAd != null) {
+                    largeAndSmallNativeAd?.let { ad ->
+                        try {
+                            adControllerListener.onAlreadyAdLoadedShow("already_load_native_ad_show")
+                            NativeViewPopulate.addLargeNativeView(
+                                context = context,
+                                adFrame = adFrame,
+                                ad = ad,
+                                adViewType = adViewType,
+                                nativeCtaColorAdPosition = nativeCtaColorAdPosition
+                            )
+                            if (isFragmentCall && !fragmentKey.isNullOrEmpty()) {
+                                shownFragmentAds.add(fragmentKey)
+                            }
+                            largeAndSmallNativeAd = null
+                            if (loadNewAd) {
+                                preLoadNativeAd(adIdNativeReference, adLayout, context, enable,adControllerListener)
+                            }
+
+                        } catch (_: Exception) {
+                        }
+                    }
+
+                } else {
+                    loadAndShowNativeAdForFragment(
+                        adIdNativeReference = adIdNativeReference,
+                        adLayout = adLayout,
+                        context = context,
+                        enable = enable,
+                        adViewType = adViewType,
+                        loadNewAd = loadNewAd,
+                        nativeCtaColorAdPosition = nativeCtaColorAdPosition,
+                        isFragmentCall = isFragmentCall,
+                        fragmentKey = if (isFragmentCall) fragmentKey else null,
+                        adControllerListener
+                    )
                 }
             } else {
                 adLayout.removeAllViews()
@@ -244,5 +336,92 @@ class AdmobNativeAd {
         }
     }
 
+    private fun loadAndShowNativeAdForFragment(
+        adIdNativeReference: String,
+        adLayout: LinearLayout,
+        context: Context,
+        enable: Boolean,
+        adViewType: Int,
+        loadNewAd: Boolean = false,
+        nativeCtaColorAdPosition: Int = -1,
+        isFragmentCall: Boolean = false,
+        fragmentKey: String? = null,
+        adControllerListener: AdControllerListener
+    ) {
+        try {
+            if (!FirebaseValue.ALL_ADS_OFF_ENABLE &&
+                GoogleMobileAdsConsentManager.getInstance(context).canRequestAds &&
+                enable &&
+                !AdSharedPreference.getInstance(context).isAppPurchased &&
+                InternetController.getInstance(context).isInternetConnected
+            ) {
+                // Sirf fragment case me block
+                if (isFragmentCall && !fragmentKey.isNullOrEmpty() && shownFragmentAds.contains(
+                        fragmentKey
+                    )
+                ) {
+                    return
+                }
+
+                if (!canRequestAd) {
+                    return
+                }
+                addShimmerLayout(adLayout, adViewType, context)
+                canRequestAd = false
+                adControllerListener.onAdCalling("native_ad_calling")
+                val adId = FetchConfig.getNativeId(adIdNativeReference)
+                val builder = AdLoader.Builder(context, adId)
+
+                builder.forNativeAd { newNativeAd: NativeAd ->
+                    canRequestAd = true
+                    adControllerListener.onAdLoaded("native_ad_loaded")
+                    largeAndSmallNativeAd = newNativeAd
+                    largeAndSmallNativeAd?.let {
+                        NativeViewPopulate.addLargeNativeView(
+                            context = context,
+                            adFrame = adLayout,
+                            ad = it,
+                            adViewType = adViewType,
+                            nativeCtaColorAdPosition = nativeCtaColorAdPosition
+                        )
+                        if (isFragmentCall && !fragmentKey.isNullOrEmpty()) {
+                            shownFragmentAds.add(fragmentKey)
+                        }
+                        largeAndSmallNativeAd = null
+
+                        if (loadNewAd) {
+                            preLoadNativeAd(adIdNativeReference, adLayout, context, enable,adControllerListener)
+                        }
+                    }
+                }
+
+                builder.withNativeAdOptions(
+                    NativeAdOptions.Builder().setVideoOptions(
+                        VideoOptions.Builder().setStartMuted(true).build()
+                    ).build()
+                )
+
+                val adLoader = builder.withAdListener(object : AdListener() {
+                    override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                        super.onAdFailedToLoad(loadAdError)
+                        canRequestAd = true
+                        largeAndSmallNativeAd = null
+                        adControllerListener.onAdLoaded("large native load failed ==> code " + loadAdError.code)
+                        adLayout.removeAllViews()
+                        adLayout.visibility = View.GONE
+                    }
+                }).build()
+
+                adLoader.loadAd(AdRequest.Builder().build())
+
+            } else {
+                adLayout.removeAllViews()
+                adLayout.visibility = View.GONE
+            }
+        } catch (e: Exception) {
+            adLayout.removeAllViews()
+            adLayout.visibility = View.GONE
+        }
+    }
 
 }

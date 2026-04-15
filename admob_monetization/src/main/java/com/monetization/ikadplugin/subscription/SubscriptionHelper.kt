@@ -18,12 +18,14 @@ import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
+import com.monetization.ikadplugin.one_time_purchase.ProductsPurchaseHelper
 import com.monetization.ikadplugin.pref.AdSharedPreference
 import com.monetization.ikadplugin.subscription.SubscriptionConstant.MONTHLY_SUBSCRIPTION_ID
 import com.monetization.ikadplugin.subscription.SubscriptionConstant.SUBSCRIBED_PRODUCT_ID
 import com.monetization.ikadplugin.subscription.SubscriptionConstant.WEEKLY_SUBSCRIPTION_ID
 import com.monetization.ikadplugin.subscription.SubscriptionConstant.YEARLY_SUBSCRIPTION_ID
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,9 +36,35 @@ import kotlinx.coroutines.launch
 data class SubscriptionModel(val productsList: Map<String, ProductDetails> = emptyMap())
 
 class SubscriptionHelper(
-    private val context: Context,
-    private val coroutineScope: CoroutineScope,
 ) : PurchasesUpdatedListener {
+    private val ioScope = CoroutineScope(Dispatchers.IO)
+    companion object {
+        @Volatile
+        private var INSTANCE: SubscriptionHelper? = null
+
+        fun getInstance(): SubscriptionHelper {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: SubscriptionHelper().also {
+                    INSTANCE = it
+                }
+            }
+        }
+    }
+    private lateinit var appContext: Context
+
+    fun initBilling(context: Context) {
+        if (!::appContext.isInitialized) {
+            appContext = context.applicationContext
+            connectBilling()
+        }
+    }
+
+    private fun requireContext(): Context {
+        check(::appContext.isInitialized) {
+            "ProductsPurchaseHelper is not initialized. Call ProductsPurchaseHelper.getInstance().init(context) first."
+        }
+        return appContext
+    }
     private var isBillingReady: Boolean = false
     private lateinit var subscriptionClient: BillingClient
     private var subscribeProductToken = ""
@@ -58,7 +86,9 @@ class SubscriptionHelper(
             if (isBillingClientDead) {
                 return
             }
-            val offerToken = skuDetails.subscriptionOfferDetails?.get(0)!!.offerToken
+            val offerToken = skuDetails.subscriptionOfferDetails
+                ?.firstOrNull()
+                ?.offerToken ?: return
             val responseCode = subscriptionClient.launchBillingFlow(
                 mActivity, BillingFlowParams.newBuilder().setProductDetailsParamsList(
                     listOf(
@@ -180,6 +210,7 @@ class SubscriptionHelper(
         }
 
     private fun resetAllPurchases() {
+        val context = requireContext()
         subscribeProductToken = ""
         SUBSCRIBED_PRODUCT_ID = ""
         AdSharedPreference.getInstance(context).appAdPurchased = false
@@ -211,7 +242,7 @@ class SubscriptionHelper(
                                     ) {
                                         if (purchase.isAcknowledged) {
                                             setSubscribed(purchase)
-                                            coroutineScope.launch {
+                                            ioScope.launch {
                                                 _appSubscribed.send(true)
                                             }
                                         } else {
@@ -223,7 +254,7 @@ class SubscriptionHelper(
                             }
                         }
                         resetAllPurchases()
-                        coroutineScope.launch {
+                        ioScope.launch {
                             _appSubscribed.send(false)
                         }
                     }
@@ -235,6 +266,7 @@ class SubscriptionHelper(
     }
 
     fun setSubscribed(purchase: Purchase) {
+        val context = requireContext()
         SUBSCRIBED_PRODUCT_ID = getSku(purchase.products)
         subscribeProductToken = purchase.purchaseToken
         AdSharedPreference.getInstance(context).appAdPurchased = true
@@ -254,7 +286,7 @@ class SubscriptionHelper(
                         try {
                             if (purchase.isAcknowledged) {
                                 setSubscribed(purchase)
-                                coroutineScope.launch {
+                                ioScope.launch {
                                     _appSubscribed.send(true)
                                 }
                             } else {
@@ -306,16 +338,17 @@ class SubscriptionHelper(
         subscriptionClient.acknowledgePurchase(acknowledgePurchaseParams) { billingResult: BillingResult ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 setSubscribed(purchase)
-                coroutineScope.launch {
+                ioScope.launch {
                     _appSubscribed.send(true)
                 }
             }
         }
     }
 
-    fun fetchProductsListIfNull() {
-        coroutineScope.launch {
-            setupConnection()
+    fun fetchProductsListIfNull(context: Context) {
+        initBilling(context)
+        ioScope.launch {
+//            setupConnection()
             if (_productListFlow.value.productsList.isEmpty()) {
                 querySubscriptionProducts()
             } else {
@@ -324,8 +357,8 @@ class SubscriptionHelper(
         }
     }
 
-    fun initBilling() {
-        coroutineScope.launch {
+    fun connectBilling() {
+        ioScope.launch {
             setupConnection()
         }
     }
@@ -333,6 +366,7 @@ class SubscriptionHelper(
     private fun setupConnection() {
         try {
             if (!::subscriptionClient.isInitialized) {
+                val context = requireContext()
                 subscriptionClient = BillingClient.newBuilder(context).enablePendingPurchases(
                     PendingPurchasesParams.newBuilder().enableOneTimeProducts().build()
                 ).setListener(this@SubscriptionHelper).build()
@@ -361,6 +395,7 @@ class SubscriptionHelper(
 
     fun viewUrlContent(url: String) {
         try {
+            val context = requireContext()
             Intent().apply {
                 action = Intent.ACTION_VIEW
                 data = url.toUri()

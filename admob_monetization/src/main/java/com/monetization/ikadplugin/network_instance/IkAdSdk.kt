@@ -11,7 +11,9 @@ import com.monetization.ikadplugin.ads.native_ads.AdmobNativeAd
 import com.monetization.ikadplugin.ads.open_ap_ads.AdmobOpenAppAd
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.internetController.InternetController
+import com.monetization.ikadplugin.one_time_purchase.ProductsPurchaseHelper
 import com.monetization.ikadplugin.pref.AdSharedPreference
+import com.monetization.ikadplugin.subscription.SubscriptionHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,6 +48,14 @@ object IkAdSdk {
 
     val collapseBannerController by lazy {
         AdmobCollapsibleBannerAd.getInstance()
+    }
+
+    val oneTimePurchaseController by lazy {
+        ProductsPurchaseHelper.getInstance()
+    }
+
+    val subscriptionController by lazy {
+        SubscriptionHelper.getInstance()
     }
 
     val openAppAdController by lazy {
