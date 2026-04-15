@@ -69,6 +69,5 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(project(":admob_monetization"))
-//fb mediation
-    implementation("com.google.ads.mediation:facebook:6.21.0.0")
+
 }

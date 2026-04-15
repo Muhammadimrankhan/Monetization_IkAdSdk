@@ -43,7 +43,7 @@ android {
     }
 }
 group = "com.github.Muhammadimrankhan"
-version = "0.0.2_meta"
+version = "0.0.3_meta"
 
 
 afterEvaluate {
@@ -53,7 +53,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.Muhammadimrankhan"
                 artifactId = "Monetization_IkAdSdk"
-                version = "0.0.2_meta"
+                version = "0.0.3_meta"
             }
         }
     }
@@ -68,5 +68,6 @@ dependencies {
     //Text and Size-ing Libs
     implementation("com.intuit.sdp:sdp-android:1.1.1")
     implementation("com.intuit.ssp:ssp-android:1.1.1")
-
+//fb mediation
+    implementation("com.google.ads.mediation:facebook:6.21.0.2")
 }
