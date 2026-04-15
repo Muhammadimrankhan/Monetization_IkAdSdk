@@ -29,12 +29,33 @@ import kotlinx.coroutines.launch
 
 data class PurchasePriceModel(val price: String = "")
 
-class ProductsPurchaseHelper(
-    private val context: Context,
-    private val internetController: InternetController,
-    private val isAdPurchase: AdSharedPreference,
-) : PurchasesUpdatedListener {
+class ProductsPurchaseHelper : PurchasesUpdatedListener {
+    private lateinit var appContext: Context
+    companion object {
+        @Volatile
+        private var INSTANCE: ProductsPurchaseHelper? = null
 
+        fun getInstance(): ProductsPurchaseHelper {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: ProductsPurchaseHelper().also {
+                    INSTANCE = it
+                }
+            }
+        }
+    }
+    fun initBilling(context: Context) {
+        if (!::appContext.isInitialized) {
+            appContext = context.applicationContext
+            connectBilling()
+        }
+    }
+
+    private fun requireContext(): Context {
+        check(::appContext.isInitialized) {
+            "ProductsPurchaseHelper is not initialized. Call ProductsPurchaseHelper.getInstance().init(context) first."
+        }
+        return appContext
+    }
     private val _productPriceFlow = MutableStateFlow(PurchasePriceModel())
     val productPriceFlow = _productPriceFlow.asStateFlow()
 
@@ -53,7 +74,8 @@ class ProductsPurchaseHelper(
         } else billingClient.isReady
 
     private fun queryProductSkuForPurchase() {
-        if (!internetController.isInternetConnected) {
+        val context = requireContext()
+        if (!InternetController.getInstance(context).isInternetConnected) {
             return
         }
         if (isBillingClientDead) {
@@ -116,7 +138,7 @@ class ProductsPurchaseHelper(
                 }
     }*/
     fun purchaseProduct(context: Activity) {
-        if (!internetController.isInternetConnected) {
+        if (!InternetController.getInstance(context).isInternetConnected) {
             Toast.makeText(context, "Internet not available", Toast.LENGTH_SHORT).show()
             return
         }
@@ -138,9 +160,9 @@ class ProductsPurchaseHelper(
         }
     }
 
-    fun checkHistoryIfSkuNull() {
+    fun checkHistoryIfSkuNull(context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
-            initBilling()
+            initBilling(context)
             if (purchaseSku == null) {
                 checkProductPurchaseHistory()
             }
@@ -148,7 +170,8 @@ class ProductsPurchaseHelper(
     }
 
     private fun checkProductPurchaseHistory() {
-        if (!internetController.isInternetConnected) {
+        val context = requireContext()
+        if (!InternetController.getInstance(context).isInternetConnected) {
             return
         }
         if (isBillingClientDead) {
@@ -176,14 +199,16 @@ class ProductsPurchaseHelper(
     }
 
     private fun appNotPurchased() {
-        isAdPurchase.appAdPurchased = false
+        val context = requireContext()
+        AdSharedPreference.getInstance(context).appAdPurchased = false
         CoroutineScope(Dispatchers.IO).launch {
             _appPurchased.send(false)
         }
     }
 
     private fun appPurchased() {
-        isAdPurchase.appAdPurchased = true
+        val context = requireContext()
+        AdSharedPreference.getInstance(context).appAdPurchased = true
         CoroutineScope(Dispatchers.IO).launch {
             _appPurchased.send(true)
         }
@@ -231,12 +256,13 @@ class ProductsPurchaseHelper(
         }
     }
 
-    init {
-        initBilling()
-    }
+   /* init {
+        connectBilling()
+    }*/
 
-    fun initBilling() {
+    private fun connectBilling() {
         try {
+            val context = requireContext()
             if (!::billingClient.isInitialized) {
                 billingClient =
                     BillingClient.newBuilder(context).setListener(this).enablePendingPurchases(

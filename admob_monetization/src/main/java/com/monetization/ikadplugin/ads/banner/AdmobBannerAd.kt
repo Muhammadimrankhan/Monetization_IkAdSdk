@@ -132,14 +132,12 @@ class AdmobBannerAd {
 
                 try {
                     adLayout.visibility = View.VISIBLE
-
                     it.parent?.let { parent ->
                         (parent as ViewGroup).removeAllViews()
                     }
-
+                    adLayout.visibility = View.VISIBLE
                     adLayout.removeAllViews()
                     adLayout.addView(it)
-
                     bannerAdView = null
 
                     if (loadNewAd) {
@@ -210,6 +208,7 @@ class AdmobBannerAd {
                                     (parent as ViewGroup).removeAllViews()
                                 }
 
+                                adLayout.visibility = View.VISIBLE
                                 adLayout.removeAllViews()
                                 adLayout.addView(it)
 
@@ -236,7 +235,7 @@ class AdmobBannerAd {
                 } else {
 
                     bannerAdView?.let {
-
+                        adLayout.visibility = View.VISIBLE
                         adLayout.removeAllViews()
                         adLayout.addView(it)
 

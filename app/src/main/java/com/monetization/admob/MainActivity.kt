@@ -4,6 +4,7 @@ import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.graphics.toColorInt
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.monetization.ikadplugin.ads.FirebaseValue
@@ -43,7 +44,7 @@ class MainActivity : AppCompatActivity() {
            FirebaseValue.PROGRESS_LOADING_OPEN_AP_ENABLE,
            FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE,
            FirebaseValue.INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE,
-           true,
+           FirebaseValue.everyNativeCtaColorChangeEnable,
            listOf(
                GradientColors("#FF00C6FF".toColorInt(), "#FF0072FF".toColorInt()),
                GradientColors("#FF7F00FF".toColorInt(), "#FFE100FF".toColorInt()),
