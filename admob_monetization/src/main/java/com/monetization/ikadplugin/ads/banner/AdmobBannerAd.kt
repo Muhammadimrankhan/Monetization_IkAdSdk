@@ -12,6 +12,7 @@ import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
 import com.monetization.ikadplugin.ads.FirebaseValue
+import com.monetization.ikadplugin.ads.NativeShimmerEffect.addShimmerLayout
 import com.monetization.ikadplugin.ads.NativeViewPopulate
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
@@ -129,7 +130,6 @@ class AdmobBannerAd {
         if (enable && !AdSharedPreference.getInstance(context).isAppPurchased && bannerAdView != null) {
 
             bannerAdView?.let {
-
                 try {
                     adLayout.visibility = View.VISIBLE
                     it.parent?.let { parent ->
@@ -161,7 +161,7 @@ class AdmobBannerAd {
         }
     }
 
-    private fun loadAndShowBannerAd(
+     fun loadAndShowBannerAd(
         adReference: String,
         context: Activity,
         enable: Boolean,
@@ -184,6 +184,7 @@ class AdmobBannerAd {
                     if (!canRequestAd) return
 
                     canRequestAd = false
+                    addShimmerLayout(adLayout, 2, context)
 
                     val adId = FetchConfig.getBannerId(adReference)
 

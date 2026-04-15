@@ -105,56 +105,66 @@ class AdmobNativeAd {
 //    populateCallback: (Any) -> Unit
 //   populateCallback.invoke(it)
 
-      fun populateNativeAd(
-          adLayout: LinearLayout,
-          adViewType: Int,
-          adIdNativeReference: String,
-          context: Context,
-          enable: Boolean,
-          adFrame: LinearLayout,
-          loadNewAd: Boolean = false,
-          nativeCtaColorAdPosition: Int = -1,
-          adControllerListener: AdControllerListener
-      ) {
-          if (!FirebaseValue.ALL_ADS_OFF_ENABLE &&
-              GoogleMobileAdsConsentManager.getInstance(context).canRequestAds &&
-              enable &&
-              !AdSharedPreference.getInstance(context).isAppPurchased &&
-              InternetController.getInstance(context).isInternetConnected
-          )  {
-              largeAndSmallNativeAd?.let {
-                  try {
-                      adControllerListener.onAlreadyAdLoadedShow("already_load_native_ad_show")
-                      NativeViewPopulate.addLargeNativeView(
-                          context = context,
-                          adFrame = adFrame,
-                          ad = it,
-                          adViewType = adViewType,
-                          nativeCtaColorAdPosition = nativeCtaColorAdPosition
-                      )
-                      largeAndSmallNativeAd = null
-                      if (loadNewAd) {
-                          preLoadNativeAd(adIdNativeReference, adLayout, context, enable,adControllerListener)
-                      }
-                  } catch (_: Exception) {
+    fun populateNativeAd(
+        adViewType: Int,
+        adIdNativeReference: String,
+        context: Context,
+        enable: Boolean,
+        adFrame: LinearLayout,
+        loadNewAd: Boolean = false,
+        nativeCtaColorAdPosition: Int = -1,
+        adControllerListener: AdControllerListener
+    ) {
+        if (!FirebaseValue.ALL_ADS_OFF_ENABLE &&
+            GoogleMobileAdsConsentManager.getInstance(context).canRequestAds &&
+            enable &&
+            !AdSharedPreference.getInstance(context).isAppPurchased &&
+            InternetController.getInstance(context).isInternetConnected
+        ) {
+            if (largeAndSmallNativeAd != null) {
+                largeAndSmallNativeAd?.let {
+                    try {
+                        adControllerListener.onAlreadyAdLoadedShow("already_load_native_ad_show")
+                        NativeViewPopulate.addLargeNativeView(
+                            context = context,
+                            adFrame = adFrame,
+                            ad = it,
+                            adViewType = adViewType,
+                            nativeCtaColorAdPosition = nativeCtaColorAdPosition
+                        )
+                        largeAndSmallNativeAd = null
+                        if (loadNewAd) {
+                            preLoadNativeAd(
+                                adIdNativeReference,
+                                adFrame,
+                                context,
+                                enable,
+                                adControllerListener
+                            )
+                        }
+                    } catch (e: Exception) {
+                        adControllerListener.onAdException("populateNativeAd exception: ${e.message}")
+                        adFrame.removeAllViews()
+                        adFrame.visibility = View.GONE
+                    }
+                }
+            } else {
+                loadAndShowNativeAd(
+                    adIdNativeReference = adIdNativeReference,
+                    adLayout = adFrame,
+                    context = context,
+                    enable = enable,
+                    adViewType = adViewType,
+                    loadNewAd = loadNewAd,
+                    nativeCtaColorAdPosition = nativeCtaColorAdPosition, adControllerListener
+                )
+            }
 
-                  }
-              }
-          } else {
-              loadAndShowNativeAd(
-                  adIdNativeReference = adIdNativeReference,
-                  adLayout = adLayout,
-                  context = context,
-                  enable = enable,
-                  adViewType = adViewType,
-                  loadNewAd = loadNewAd,
-                  nativeCtaColorAdPosition = nativeCtaColorAdPosition,adControllerListener
-              )
-          }
-      }
+        }
+    }
 
 
-    private fun loadAndShowNativeAd(
+     fun loadAndShowNativeAd(
         adIdNativeReference: String,
         adLayout: LinearLayout,
         context: Context,
@@ -198,7 +208,13 @@ class AdmobNativeAd {
                             )
                             largeAndSmallNativeAd = null
                             if (loadNewAd) {
-                                preLoadNativeAd(adIdNativeReference, adLayout, context, enable,adControllerListener)
+                                preLoadNativeAd(
+                                    adIdNativeReference,
+                                    adLayout,
+                                    context,
+                                    enable,
+                                    adControllerListener
+                                )
                             }
                         }
                     }
@@ -233,7 +249,13 @@ class AdmobNativeAd {
                         )
                         largeAndSmallNativeAd = null
                         if (loadNewAd) {
-                            preLoadNativeAd(adIdNativeReference, adLayout, context, enable,adControllerListener)
+                            preLoadNativeAd(
+                                adIdNativeReference,
+                                adLayout,
+                                context,
+                                enable,
+                                adControllerListener
+                            )
                         }
                     }
                 }
@@ -247,8 +269,6 @@ class AdmobNativeAd {
             adLayout.visibility = View.GONE
         }
     }
-
-
 
 
     val shownFragmentAds = HashSet<String>()
@@ -305,7 +325,13 @@ class AdmobNativeAd {
                             }
                             largeAndSmallNativeAd = null
                             if (loadNewAd) {
-                                preLoadNativeAd(adIdNativeReference, adLayout, context, enable,adControllerListener)
+                                preLoadNativeAd(
+                                    adIdNativeReference,
+                                    adLayout,
+                                    context,
+                                    enable,
+                                    adControllerListener
+                                )
                             }
 
                         } catch (_: Exception) {
@@ -336,7 +362,7 @@ class AdmobNativeAd {
         }
     }
 
-    private fun loadAndShowNativeAdForFragment(
+     fun loadAndShowNativeAdForFragment(
         adIdNativeReference: String,
         adLayout: LinearLayout,
         context: Context,
@@ -390,7 +416,13 @@ class AdmobNativeAd {
                         largeAndSmallNativeAd = null
 
                         if (loadNewAd) {
-                            preLoadNativeAd(adIdNativeReference, adLayout, context, enable,adControllerListener)
+                            preLoadNativeAd(
+                                adIdNativeReference,
+                                adLayout,
+                                context,
+                                enable,
+                                adControllerListener
+                            )
                         }
                     }
                 }

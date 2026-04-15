@@ -22,6 +22,7 @@ import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
 import com.monetization.ikadplugin.BuildConfig
+import com.monetization.ikadplugin.ads.NativeShimmerEffect.addShimmerLayout
 
 class AdmobCollapsibleBannerAd{
 
@@ -198,7 +199,6 @@ class AdmobCollapsibleBannerAd{
     ) {
 
         try {
-
             if (FirebaseValue.ALL_ADS_OFF_ENABLE ||
                 !enable ||
                 !GoogleMobileAdsConsentManager.getInstance(activity).canRequestAds ||
@@ -213,6 +213,7 @@ class AdmobCollapsibleBannerAd{
             if (!canRequestAd) return
 
             canRequestAd = false
+            addShimmerLayout(adFrame, 2, activity)
 
             val adId = FetchConfig.getBannerId(adReference)
 

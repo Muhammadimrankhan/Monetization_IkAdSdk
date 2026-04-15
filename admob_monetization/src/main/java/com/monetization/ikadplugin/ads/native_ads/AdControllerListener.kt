@@ -6,4 +6,5 @@ interface AdControllerListener {
     fun onAdLoaded(string: String)
     fun onAdFailed(string: String)
     fun onAdPurchased(any: Any)
+    fun onAdException(any: Any)
 }
