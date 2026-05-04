@@ -8,6 +8,7 @@ import com.monetization.ikadplugin.subscription.SubscriptionConstant.MONTHLY_SUB
 import com.monetization.ikadplugin.subscription.SubscriptionConstant.PRODUCT_ID
 import com.monetization.ikadplugin.subscription.SubscriptionConstant.WEEKLY_SUBSCRIPTION_ID
 import com.monetization.ikadplugin.subscription.SubscriptionConstant.YEARLY_SUBSCRIPTION_ID
+import com.monetization.ikadplugin.subscription.SubscriptionConstant.isDebug
 
 object FetchConfig {
     fun assignRemoteConfigValues(adsConfig: AdsConfig) {
@@ -36,6 +37,10 @@ object FetchConfig {
         FirebaseValue.everyNativeCtaColorList.addAll(adsConfig.everyNativeCtaColor)
         FirebaseValue.darkTheme = adsConfig.darkTheme
 
+    }
+
+    fun assignBuildConfig(isDebugValue: Boolean) {
+        isDebug = isDebugValue
     }
 
     fun assignOneTimeRemoveAdsConfig(oneTimePurchaseConfig: OneTimePurchaseConfig) {

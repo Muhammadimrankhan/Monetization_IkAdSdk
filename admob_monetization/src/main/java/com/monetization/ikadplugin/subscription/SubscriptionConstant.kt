@@ -1,4 +1,5 @@
 package com.monetization.ikadplugin.subscription
+
 import com.monetization.ikadplugin.BuildConfig
 
 object SubscriptionConstant {
@@ -8,5 +9,6 @@ object SubscriptionConstant {
 
     var SUBSCRIBED_PRODUCT_ID = ""
 
-    var  PRODUCT_ID=""
+    var PRODUCT_ID = ""
+    var isDebug = false
 }

@@ -12,6 +12,8 @@ import com.monetization.ikadplugin.ads_id.NetworkIdConfig
 import com.monetization.ikadplugin.firebase_value_fetch.AdsConfig
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.firebase_value_fetch.GradientColors
+import com.monetization.ikadplugin.pref.OneTimePurchaseConfig
+import com.monetization.ikadplugin.subscription.SubscriptionConfig
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,6 +25,13 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+
+        val oneTimePurchaseConfig = OneTimePurchaseConfig("")
+        FetchConfig.assignOneTimeRemoveAdsConfig(oneTimePurchaseConfig)
+
+        val subscriptionConfig = SubscriptionConfig("","","")
+        FetchConfig.assignSubscriptionRemoveAdsConfig(subscriptionConfig)
        val adsConfig = AdsConfig(
            FirebaseValue.allAppInterstitialAdCountChange,
            FirebaseValue.SPLASH_TIME,

@@ -43,7 +43,7 @@ android {
     }
 }
 group = "com.github.Muhammadimrankhan"
-version = "0.0.8"
+version = "0.0.9"
 
 
 afterEvaluate {
@@ -53,7 +53,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.Muhammadimrankhan"
                 artifactId = "Monetization_IkAdSdk"
-                version = "0.0.8"
+                version = "0.0.9"
             }
         }
     }
@@ -68,5 +68,12 @@ dependencies {
     //Text and Size-ing Libs
     implementation("com.intuit.sdp:sdp-android:1.1.1")
     implementation("com.intuit.ssp:ssp-android:1.1.1")
+
+    // Import the BoM for the Firebase platform
+    implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
+
+    // Add the dependency for the Analytics library
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+    implementation("com.google.firebase:firebase-analytics")
 
 }

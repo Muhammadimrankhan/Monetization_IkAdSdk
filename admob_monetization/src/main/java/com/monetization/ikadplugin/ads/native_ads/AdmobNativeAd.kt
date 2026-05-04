@@ -20,6 +20,8 @@ import com.monetization.ikadplugin.pref.AdSharedPreference
 import com.monetization.ikadplugin.BuildConfig
 import com.monetization.ikadplugin.ads.NativeShimmerEffect.addShimmerLayout
 import com.monetization.ikadplugin.ads.interstitial_ads.InterstitialControllerListener
+import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
+import com.monetization.ikadplugin.ads_duration_tracker.AdType
 
 class AdmobNativeAd {
 
@@ -72,6 +74,10 @@ class AdmobNativeAd {
                         canRequestAd = true
                         adControllerListener.onAdLoaded("native_ad_loaded")
                         largeAndSmallNativeAd = newNativeAd
+                        AdClickDurationTracker.adRequestMatch(
+                            adType = AdType.NATIVE,
+                            adIdReferenceName = adIdNativeReference
+                        )
                     }
                     builder.withNativeAdOptions(
                         NativeAdOptions.Builder().setVideoOptions(
@@ -80,8 +86,21 @@ class AdmobNativeAd {
                     )
 
                     val adLoader = builder.withAdListener(object : AdListener() {
+                        override fun onAdClicked() {
+                            super.onAdClicked()
+
+                            AdClickDurationTracker.startTracking(
+                                adType = AdType.NATIVE,
+                                adIdReferenceName = adIdNativeReference
+                            )
+                        }
+
                         override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                             super.onAdFailedToLoad(loadAdError)
+                            AdClickDurationTracker.adRequestFail(
+                                adType = AdType.NATIVE,
+                                adIdReferenceName = adIdNativeReference
+                            )
                             canRequestAd = true
                             largeAndSmallNativeAd = null
                             adControllerListener.onAdFailed("large native load failed ==> code " + loadAdError.code)
@@ -124,6 +143,10 @@ class AdmobNativeAd {
             if (largeAndSmallNativeAd != null) {
                 largeAndSmallNativeAd?.let {
                     try {
+                        AdClickDurationTracker.adShow(
+                            adType = AdType.NATIVE,
+                            adIdReferenceName = adIdNativeReference
+                        )
                         adControllerListener.onAlreadyAdLoadedShow("already_load_native_ad_show")
                         NativeViewPopulate.addLargeNativeView(
                             context = context,
@@ -164,7 +187,7 @@ class AdmobNativeAd {
     }
 
 
-     fun loadAndShowNativeAd(
+    fun loadAndShowNativeAd(
         adIdNativeReference: String,
         adLayout: LinearLayout,
         context: Context,
@@ -198,7 +221,15 @@ class AdmobNativeAd {
                         canRequestAd = true
                         adControllerListener.onAdLoaded("native_ad_loaded")
                         largeAndSmallNativeAd = newNativeAd
+                        AdClickDurationTracker.adRequestMatch(
+                            adType = AdType.NATIVE,
+                            adIdReferenceName = adIdNativeReference
+                        )
                         largeAndSmallNativeAd?.let {
+                            AdClickDurationTracker.adShow(
+                                adType = AdType.NATIVE,
+                                adIdReferenceName = adIdNativeReference
+                            )
                             NativeViewPopulate.addLargeNativeView(
                                 context = context,
                                 adFrame = adLayout,
@@ -225,8 +256,22 @@ class AdmobNativeAd {
                     )
 
                     val adLoader = builder.withAdListener(object : AdListener() {
+                        override fun onAdClicked() {
+                            super.onAdClicked()
+
+                            AdClickDurationTracker.startTracking(
+                                adType = AdType.NATIVE,
+                                adIdReferenceName = adIdNativeReference
+                            )
+                        }
+
                         override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                             super.onAdFailedToLoad(loadAdError)
+                            AdClickDurationTracker.adRequestFail(
+                                adType = AdType.NATIVE,
+                                adIdReferenceName = adIdNativeReference
+                            )
+
                             canRequestAd = true
                             largeAndSmallNativeAd = null
                             adControllerListener.onAdFailed("large native load failed ==> code " + loadAdError.code)
@@ -239,6 +284,10 @@ class AdmobNativeAd {
                     largeAndSmallNativeAd?.let {
                         addShimmerLayout(
                             adLayout, adViewType, context
+                        )
+                        AdClickDurationTracker.adShow(
+                            adType = AdType.NATIVE,
+                            adIdReferenceName = adIdNativeReference
                         )
                         NativeViewPopulate.addLargeNativeView(
                             context = context,
@@ -362,7 +411,7 @@ class AdmobNativeAd {
         }
     }
 
-     fun loadAndShowNativeAdForFragment(
+    fun loadAndShowNativeAdForFragment(
         adIdNativeReference: String,
         adLayout: LinearLayout,
         context: Context,
@@ -402,7 +451,15 @@ class AdmobNativeAd {
                     canRequestAd = true
                     adControllerListener.onAdLoaded("native_ad_loaded")
                     largeAndSmallNativeAd = newNativeAd
+                    AdClickDurationTracker.adRequestMatch(
+                        adType = AdType.NATIVE,
+                        adIdReferenceName = adIdNativeReference
+                    )
                     largeAndSmallNativeAd?.let {
+                        AdClickDurationTracker.adShow(
+                            adType = AdType.NATIVE,
+                            adIdReferenceName = adIdNativeReference
+                        )
                         NativeViewPopulate.addLargeNativeView(
                             context = context,
                             adFrame = adLayout,
@@ -434,8 +491,21 @@ class AdmobNativeAd {
                 )
 
                 val adLoader = builder.withAdListener(object : AdListener() {
+                    override fun onAdClicked() {
+                        super.onAdClicked()
+
+                        AdClickDurationTracker.startTracking(
+                            adType = AdType.NATIVE,
+                            adIdReferenceName = adIdNativeReference
+                        )
+                    }
+
                     override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                         super.onAdFailedToLoad(loadAdError)
+                        AdClickDurationTracker.adRequestFail(
+                            adType = AdType.NATIVE,
+                            adIdReferenceName = adIdNativeReference
+                        )
                         canRequestAd = true
                         largeAndSmallNativeAd = null
                         adControllerListener.onAdLoaded("large native load failed ==> code " + loadAdError.code)

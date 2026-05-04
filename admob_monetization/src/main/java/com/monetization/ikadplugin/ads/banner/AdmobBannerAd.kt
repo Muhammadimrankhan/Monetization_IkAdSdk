@@ -14,10 +14,13 @@ import com.google.android.gms.ads.LoadAdError
 import com.monetization.ikadplugin.ads.FirebaseValue
 import com.monetization.ikadplugin.ads.NativeShimmerEffect.addShimmerLayout
 import com.monetization.ikadplugin.ads.NativeViewPopulate
+import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
+import com.monetization.ikadplugin.ads_duration_tracker.AdType
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
+import com.monetization.ikadplugin.subscription.SubscriptionConstant.isDebug
 
 class AdmobBannerAd {
 
@@ -65,7 +68,7 @@ class AdmobBannerAd {
 
                     canRequestAd = false
 
-                    if (BuildConfig.DEBUG) {
+                    if (isDebug) {
                         Toast.makeText(context, "banner ad calling", Toast.LENGTH_SHORT).show()
                     }
 
@@ -81,13 +84,24 @@ class AdmobBannerAd {
 
                     adView.adListener = object : AdListener() {
 
+                        override fun onAdClicked() {
+                            super.onAdClicked()
+
+                            AdClickDurationTracker.startTracking(
+                                adType = AdType.BANNER,
+                                adIdReferenceName = adReference
+                            )
+                        }
                         override fun onAdLoaded() {
                             super.onAdLoaded()
 
                             canRequestAd = true
                             bannerAdView = adView
-
-                            if (BuildConfig.DEBUG) {
+                            AdClickDurationTracker.adRequestMatch(
+                                adType = AdType.BANNER,
+                                adIdReferenceName = adReference
+                            )
+                            if (isDebug) {
                                 Toast.makeText(context, "banner loaded", Toast.LENGTH_SHORT).show()
                             }
                         }
@@ -97,8 +111,12 @@ class AdmobBannerAd {
 
                             canRequestAd = true
                             bannerAdView = null
+                            AdClickDurationTracker.adRequestFail(
+                                adType = AdType.BANNER,
+                                adIdReferenceName = adReference
+                            )
 
-                            if (BuildConfig.DEBUG) {
+                            if (isDebug) {
                                 Toast.makeText(
                                     context,
                                     "banner failed: ${error.code}",
@@ -139,7 +157,10 @@ class AdmobBannerAd {
                     adLayout.removeAllViews()
                     adLayout.addView(it)
                     bannerAdView = null
-
+                    AdClickDurationTracker.adShow(
+                        adType = AdType.BANNER,
+                        adIdReferenceName = adReference
+                    )
                     if (loadNewAd) {
                         loadBannerAd(adReference, context, enable, isRectangleBanner)
                     }
@@ -197,6 +218,14 @@ class AdmobBannerAd {
                     adView.setAdSize(bannerSize)
 
                     adView.adListener = object : AdListener() {
+                        override fun onAdClicked() {
+                            super.onAdClicked()
+
+                            AdClickDurationTracker.startTracking(
+                                adType = AdType.BANNER,
+                                adIdReferenceName = adReference
+                            )
+                        }
 
                         override fun onAdLoaded() {
 
@@ -212,19 +241,30 @@ class AdmobBannerAd {
                                 adLayout.visibility = View.VISIBLE
                                 adLayout.removeAllViews()
                                 adLayout.addView(it)
-
+                                AdClickDurationTracker.adShow(
+                                    adType = AdType.BANNER,
+                                    adIdReferenceName = adReference
+                                )
                                 bannerAdView = null
 
                                 if (loadNewAd) {
                                     loadBannerAd(adReference, context, enable, isRectangleBanner)
                                 }
                             }
+                            AdClickDurationTracker.adRequestMatch(
+                                adType = AdType.BANNER,
+                                adIdReferenceName = adReference
+                            )
                         }
 
                         override fun onAdFailedToLoad(error: LoadAdError) {
 
                             canRequestAd = true
                             bannerAdView = null
+                            AdClickDurationTracker.adRequestFail(
+                                adType = AdType.BANNER,
+                                adIdReferenceName = adReference
+                            )
 
                             adLayout.removeAllViews()
                             adLayout.visibility = View.GONE
@@ -239,7 +279,10 @@ class AdmobBannerAd {
                         adLayout.visibility = View.VISIBLE
                         adLayout.removeAllViews()
                         adLayout.addView(it)
-
+                        AdClickDurationTracker.adShow(
+                            adType = AdType.BANNER,
+                            adIdReferenceName = adReference
+                        )
                         bannerAdView = null
 
                         if (loadNewAd) {

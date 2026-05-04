@@ -22,6 +22,8 @@ import com.monetization.ikadplugin.ads.AdLoadingDialog
 import com.monetization.ikadplugin.ads.FirebaseValue
 import com.monetization.ikadplugin.ads.interstitial_ads.InterstitialControllerListener
 import com.monetization.ikadplugin.ads.native_ads.AdControllerListener
+import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
+import com.monetization.ikadplugin.ads_duration_tracker.AdType
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.network_instance.IkAdSdk.getCurrentActivity
@@ -74,7 +76,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     override fun onStart(owner: LifecycleOwner) {
         super.onStart(owner)
         try {
-            if(appContext==null){
+            if (appContext == null) {
                 openAdControllerListener?.onContextNotFound("appContext_is_null")
             }
             AdKeys.IS_APP_PAUSE = false
@@ -97,7 +99,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     }
 
     private fun fetchAd() {
-        if(appContext==null){
+        if (appContext == null) {
             openAdControllerListener?.onContextNotFound("appContext_is_null")
         }
         val ctx = appContext ?: return
@@ -126,10 +128,18 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                     openAdControllerListener?.onAdLoaded("Open_Ad_Loaded")
                     mAppOpenAd = appOpenAd
                     loadTime = Date().time
+                    AdClickDurationTracker.adRequestMatch(
+                        adType = AdType.APP_OPEN,
+                        adIdReferenceName = adRef
+                    )
                 }
 
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                     super.onAdFailedToLoad(loadAdError)
+                    AdClickDurationTracker.adRequestFail(
+                        adType = AdType.APP_OPEN,
+                        adIdReferenceName = adRef
+                    )
                     canRequestAd = true
                     mAppOpenAd = null
                     openAdControllerListener?.onAdFailed("Open_Ad_Failed")
@@ -195,6 +205,15 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                 it.setImmersiveMode(true)
             }
             it.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdClicked() {
+                    super.onAdClicked()
+
+                    AdClickDurationTracker.startTracking(
+                        adType = AdType.APP_OPEN,
+                        adIdReferenceName = adRef
+                    )
+                }
+
                 override fun onAdDismissedFullScreenContent() {
                     super.onAdDismissedFullScreenContent()
                     mAppOpenAd = null
@@ -211,12 +230,20 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
 
                 override fun onAdFailedToShowFullScreenContent(p0: AdError) {
                     super.onAdFailedToShowFullScreenContent(p0)
+                    AdClickDurationTracker.adRequestFail(
+                        adType = AdType.APP_OPEN,
+                        adIdReferenceName = adRef
+                    )
                     hideProgress()
                     mAppOpenAd = null
                     callback.invoke()
                     AdKeys.isShowingOpenAd = false
                 }
             }
+            AdClickDurationTracker.adShow(
+                adType = AdType.APP_OPEN,
+                adIdReferenceName = adRef
+            )
             it.show(mContext)
         }
     }
