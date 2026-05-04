@@ -1,7 +1,7 @@
 package com.monetization.ikadplugin.network_instance
 
 import android.app.Activity
-import com.facebook.ads.AudienceNetworkAds
+import android.content.Context
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.RequestConfiguration
 import com.monetization.ikadplugin.BuildConfig
@@ -14,6 +14,7 @@ import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.one_time_purchase.ProductsPurchaseHelper
 import com.monetization.ikadplugin.pref.AdSharedPreference
+import com.monetization.ikadplugin.subscription.SubscriptionConstant.isDebug
 import com.monetization.ikadplugin.subscription.SubscriptionHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -63,48 +64,44 @@ object IkAdSdk {
         AdmobOpenAppAd.getInstance()
     }
 
+    var isConsentCheck = false
     fun startSplash(
         context: Activity, consentVerifyID: String = "", consentCallback: (Any) -> Unit
     ) {
-        var consentManager = GoogleMobileAdsConsentManager.getInstance(context)
-        if (!AdSharedPreference.getInstance(context).isAppPurchased && InternetController.getInstance(
-                context
-            ).isInternetConnected
+
+        val consentManager = GoogleMobileAdsConsentManager.getInstance(context)
+        if (isConsentCheck) {
+            consentCallback.invoke(consentManager.canRequestAds)
+            return
+        }
+        if (!AdSharedPreference.getInstance(context).isAppPurchased && InternetController.getInstance(context).isInternetConnected
         ) {
             consentManager.gatherConsent(context) { error ->
-                initMobileSdk(context)
+                if (context.isFinishing || context.isDestroyed) return@gatherConsent
+                initMobileSdk(context.applicationContext)
+                if (consentManager.canRequestAds) {
+                    isConsentCheck = true
+                }
                 consentCallback.invoke(consentManager.canRequestAds)
             }
 
-            if (BuildConfig.DEBUG) {
+            if (isDebug) {
                 MobileAds.setRequestConfiguration(
                     RequestConfiguration.Builder().setTestDeviceIds(listOf(consentVerifyID)).build()
                 )
             }
         } else {
-            initMobileSdk(context)
+            initMobileSdk(context.applicationContext)
             consentCallback.invoke(consentManager.canRequestAds)
         }
 
     }
 
-    fun initMobileSdk(context: Activity) {
+    fun initMobileSdk(context: Context) {
         if (GoogleMobileAdsConsentManager.getInstance(context).canRequestAds) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     MobileAds.initialize(context)
-                } catch (_: Exception) {
-                } catch (_: ClassNotFoundException) {
-                } catch (_: NoClassDefFoundError) {
-                } catch (_: NoSuchMethodError) {
-                } catch (_: VerifyError) {
-                } catch (_: OutOfMemoryError) {
-                }
-            }
-
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    AudienceNetworkAds.initialize(context)
                 } catch (_: Exception) {
                 } catch (_: ClassNotFoundException) {
                 } catch (_: NoClassDefFoundError) {

@@ -10,6 +10,7 @@ import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.FormError
 import com.google.android.ump.UserMessagingPlatform
 import com.monetization.ikadplugin.BuildConfig
+import com.monetization.ikadplugin.subscription.SubscriptionConstant.isDebug
 
 class GoogleMobileAdsConsentManager private constructor(context: Context) {
 
@@ -51,7 +52,7 @@ class GoogleMobileAdsConsentManager private constructor(context: Context) {
         onConsentGatheringCompleteListener: OnConsentGatheringCompleteListener
     ) {
         // For testing purposes, you can force a DebugGeography of EEA or NOT_EEA.
-        val params: ConsentRequestParameters = if (BuildConfig.DEBUG) {
+        val params: ConsentRequestParameters = if (isDebug) {
             val debugSettings =
                 ConsentDebugSettings.Builder(activity)
                     .setDebugGeography(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA)

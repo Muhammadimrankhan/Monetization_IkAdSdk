@@ -6,6 +6,7 @@ import android.os.Bundle
 import com.monetization.ikadplugin.ads.AdKeys.IS_APP_PAUSE
 import com.monetization.ikadplugin.ads.AdKeys.canShowOpenAd
 import com.monetization.ikadplugin.ads.open_ap_ads.OpenAdControllerListener
+import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
 import com.monetization.ikadplugin.network_instance.IkAdSdk
 
 class IkAdPluginAppClass : Application(), Application.ActivityLifecycleCallbacks {
@@ -21,6 +22,11 @@ class IkAdPluginAppClass : Application(), Application.ActivityLifecycleCallbacks
             isOpenAdInitialized = true
             IkAdSdk.openAppAdController.initOpenAd(this, adRef, enable, openAdControllerListener)
         }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        AdClickDurationTracker.init(this)
     }
 
     fun initFirst() {

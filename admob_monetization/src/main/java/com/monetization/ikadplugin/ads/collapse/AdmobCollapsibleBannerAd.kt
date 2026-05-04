@@ -23,8 +23,11 @@ import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
 import com.monetization.ikadplugin.BuildConfig
 import com.monetization.ikadplugin.ads.NativeShimmerEffect.addShimmerLayout
+import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
+import com.monetization.ikadplugin.ads_duration_tracker.AdType
+import com.monetization.ikadplugin.subscription.SubscriptionConstant.isDebug
 
-class AdmobCollapsibleBannerAd{
+class AdmobCollapsibleBannerAd {
 
     companion object {
 
@@ -99,8 +102,9 @@ class AdmobCollapsibleBannerAd{
 
                 canRequestAd = false
 
-                if (BuildConfig.DEBUG) {
-                    Toast.makeText(activity, "collapsible banner calling", Toast.LENGTH_SHORT).show()
+                if (isDebug) {
+                    Toast.makeText(activity, "collapsible banner calling", Toast.LENGTH_SHORT)
+                        .show()
                 }
 
                 val adId = FetchConfig.getBannerId(adReference)
@@ -117,23 +121,39 @@ class AdmobCollapsibleBannerAd{
                     .build()
 
                 adView.adListener = object : AdListener() {
+                    override fun onAdClicked() {
+                        super.onAdClicked()
+
+                        AdClickDurationTracker.startTracking(
+                            adType = AdType.BANNER,
+                            adIdReferenceName = adReference
+                        )
+                    }
 
                     override fun onAdLoaded() {
 
                         canRequestAd = true
                         bannerAd = adView
-
-                        if (BuildConfig.DEBUG) {
-                            Toast.makeText(activity, "collapse banner loaded", Toast.LENGTH_SHORT).show()
+                        AdClickDurationTracker.adRequestMatch(
+                            adType = AdType.BANNER,
+                            adIdReferenceName = adReference
+                        )
+                        if (isDebug) {
+                            Toast.makeText(activity, "collapse banner loaded", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
 
                     override fun onAdFailedToLoad(error: LoadAdError) {
+                        AdClickDurationTracker.adRequestFail(
+                            adType = AdType.BANNER,
+                            adIdReferenceName = adReference
+                        )
 
                         canRequestAd = true
                         bannerAd = null
 
-                        if (BuildConfig.DEBUG) {
+                        if (isDebug) {
                             Toast.makeText(
                                 activity,
                                 "collapse banner failed ${error.code}",
@@ -176,7 +196,10 @@ class AdmobCollapsibleBannerAd{
                     adFrame.removeAllViews()
                     adFrame.visibility = View.VISIBLE
                     adFrame.addView(it)
-
+                    AdClickDurationTracker.adShow(
+                        adType = AdType.BANNER,
+                        adIdReferenceName = adReference
+                    )
                     bannerAd = null
 
                     if (loadNewAd) {
@@ -229,15 +252,35 @@ class AdmobCollapsibleBannerAd{
                 .build()
 
             adView.adListener = object : AdListener() {
+                override fun onAdClicked() {
+                    super.onAdClicked()
+
+                    AdClickDurationTracker.startTracking(
+                        adType = AdType.BANNER,
+                        adIdReferenceName = adReference
+                    )
+                }
 
                 override fun onAdLoaded() {
                     canRequestAd = true
                     adFrame.visibility = View.VISIBLE
                     adFrame.removeAllViews()
                     adFrame.addView(adView)
+                    AdClickDurationTracker.adShow(
+                        adType = AdType.BANNER,
+                        adIdReferenceName = adReference
+                    )
+                    AdClickDurationTracker.adRequestMatch(
+                        adType = AdType.BANNER,
+                        adIdReferenceName = adReference
+                    )
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
+                    AdClickDurationTracker.adRequestFail(
+                        adType = AdType.BANNER,
+                        adIdReferenceName = adReference
+                    )
                     canRequestAd = true
                     adFrame.removeAllViews()
                     adFrame.visibility = View.GONE

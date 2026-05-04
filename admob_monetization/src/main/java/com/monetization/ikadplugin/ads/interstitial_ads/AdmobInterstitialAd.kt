@@ -17,10 +17,13 @@ import com.monetization.ikadplugin.ads.AdKeys
 import com.monetization.ikadplugin.ads.AdKeys.iapScreenShow
 import com.monetization.ikadplugin.ads.AdLoadingDialog
 import com.monetization.ikadplugin.ads.FirebaseValue
+import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
+import com.monetization.ikadplugin.ads_duration_tracker.AdType
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
+import com.monetization.ikadplugin.subscription.SubscriptionConstant.isDebug
 
 class AdmobInterstitialAd {
 
@@ -45,6 +48,7 @@ class AdmobInterstitialAd {
     private var admobInterAd: InterstitialAd? = null
     private var mInterstitialControllerListener: InterstitialControllerListener? = null
     private var isHandlerRunning = false
+    private var adIdReference = ""
     private var isHandlerRunningInstant = false
     private val runnableInstant = Runnable {
         if (mInterstitialControllerListener != null && isHandlerRunningInstant) {
@@ -181,7 +185,7 @@ class AdmobInterstitialAd {
                     if (!isHandlerRunning) {
                         startHandler()
                     }
-                    if (BuildConfig.DEBUG) {
+                    if (isDebug) {
                         Toast.makeText(context, "splash admob inter Called", Toast.LENGTH_SHORT)
                             .show()
                     }
@@ -195,7 +199,8 @@ class AdmobInterstitialAd {
                                 super.onAdLoaded(p0)
                                 canRequestAd = true
                                 admobInterAd = p0
-                                if (BuildConfig.DEBUG) {
+                                adIdReference = adIdReferenceName
+                                if (isDebug) {
                                     Toast.makeText(
                                         context, "splash admob inter Loaded", Toast.LENGTH_SHORT
                                     ).show()
@@ -212,12 +217,16 @@ class AdmobInterstitialAd {
                                         context, true
                                     )
                                 }
+                                AdClickDurationTracker.adRequestMatch(
+                                    adType = AdType.INTERSTITIAL,
+                                    adIdReferenceName = adIdReference
+                                )
                             }
 
                             override fun onAdFailedToLoad(p0: LoadAdError) {
                                 super.onAdFailedToLoad(p0)
                                 canRequestAd = true
-                                if (BuildConfig.DEBUG) {
+                                if (isDebug) {
                                     Toast.makeText(
                                         context, "splash admob inter failed", Toast.LENGTH_SHORT
                                     ).show()
@@ -229,6 +238,10 @@ class AdmobInterstitialAd {
                                     mInterstitialControllerListener?.onAdClosed()
 
                                 }
+                                AdClickDurationTracker.adRequestFail(
+                                    adType = AdType.INTERSTITIAL,
+                                    adIdReferenceName = adIdReference
+                                )
 
                             }
                         })
@@ -272,8 +285,12 @@ class AdmobInterstitialAd {
 
     private fun showAdmobAd(activity: Activity) {
         try {
-            if (admobInterAd != null && !InternetController.getInstance(activity).isVPNConnected && !AdKeys.IS_APP_PAUSE && !AdKeys.isShowingOpenAd) {
+            if (admobInterAd != null && !AdKeys.IS_APP_PAUSE && !AdKeys.isShowingOpenAd) {
                 admobInterAd?.show(activity)
+                AdClickDurationTracker.adShow(
+                    adType = AdType.INTERSTITIAL,
+                    adIdReferenceName = adIdReference
+                )
             } else {
                 mInterstitialControllerListener?.onAdClosed()
             }
@@ -282,20 +299,6 @@ class AdmobInterstitialAd {
         }
     }
 
-    private fun loadNewAd(context: Activity) {
-//            loadAd(context)
-    }
-
-    fun initAdMob(context: Activity, enable: Boolean) {
-        isExitAppCall = false
-        if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE || !enable || !InternetController.getInstance(
-                context
-            ).isInternetConnected
-        ) {
-            return
-        }
-        loadNewAd(context)
-    }
 
     fun isExitAppCall() {
         isExitAppCall = true
@@ -314,7 +317,7 @@ class AdmobInterstitialAd {
                     return
                 }
                 canRequestAd = false
-                if (BuildConfig.DEBUG) {
+                if (isDebug) {
                     Toast.makeText(mContext, "Interstitial Called", Toast.LENGTH_SHORT).show()
                 }
                 val adId = FetchConfig.getInterstitialId(adIdReferenceName)
@@ -332,12 +335,17 @@ class AdmobInterstitialAd {
                             super.onAdLoaded(p0)
                             canRequestAd = true
                             admobInterAd = p0
+                            adIdReference = adIdReferenceName
                             if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE && isHandlerRunningInstant) {
                                 adLoadingDialog?.dismissAlertDialog()
                                 removeCallBacksInstant()
                                 setAdmobFullScreen(activity = mContext, false, "")
                             }
-                            if (BuildConfig.DEBUG) {
+                            AdClickDurationTracker.adRequestMatch(
+                                adType = AdType.INTERSTITIAL,
+                                adIdReferenceName = adIdReference
+                            )
+                            if (isDebug) {
                                 Toast.makeText(
                                     mContext, "Interstitial Admob Loaded", Toast.LENGTH_SHORT
                                 ).show()
@@ -353,7 +361,11 @@ class AdmobInterstitialAd {
                                 removeCallBacksInstant()
                                 mInterstitialControllerListener?.onAdClosed()
                             }
-                            if (BuildConfig.DEBUG) {
+                            AdClickDurationTracker.adRequestFail(
+                                adType = AdType.INTERSTITIAL,
+                                adIdReferenceName = adIdReference
+                            )
+                            if (isDebug) {
                                 Toast.makeText(mContext, "Admob inter failed", Toast.LENGTH_SHORT)
                                     .show()
                             }
@@ -388,7 +400,7 @@ class AdmobInterstitialAd {
                     return
                 }
                 canRequestAd = false
-                if (BuildConfig.DEBUG) {
+                if (isDebug) {
                     Toast.makeText(mContext, "Interstitial Called", Toast.LENGTH_SHORT).show()
                 }
                 val adId = FetchConfig.getInterstitialId(adIdReferenceName)
@@ -402,18 +414,26 @@ class AdmobInterstitialAd {
                             super.onAdLoaded(p0)
                             canRequestAd = true
                             admobInterAd = p0
-                            if (BuildConfig.DEBUG) {
+                            if (isDebug) {
                                 Toast.makeText(
                                     mContext, "Interstitial Admob Loaded", Toast.LENGTH_SHORT
                                 ).show()
                             }
+                            AdClickDurationTracker.adRequestMatch(
+                                adType = AdType.INTERSTITIAL,
+                                adIdReferenceName = adIdReference
+                            )
                         }
 
                         override fun onAdFailedToLoad(p0: LoadAdError) {
                             super.onAdFailedToLoad(p0)
+                            AdClickDurationTracker.adRequestFail(
+                                adType = AdType.INTERSTITIAL,
+                                adIdReferenceName = adIdReference
+                            )
                             canRequestAd = true
                             admobInterAd = null
-                            if (BuildConfig.DEBUG) {
+                            if (isDebug) {
                                 Toast.makeText(mContext, "Admob inter failed", Toast.LENGTH_SHORT)
                                     .show()
                             }
@@ -642,6 +662,14 @@ class AdmobInterstitialAd {
         adLoadingDialog?.dismissAlertDialog()
 
         admobInterAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdClicked() {
+                super.onAdClicked()
+                AdClickDurationTracker.startTracking(
+                    adType = AdType.INTERSTITIAL,
+                    adIdReferenceName = adIdReference
+                )
+            }
+
             override fun onAdDismissedFullScreenContent() {
                 super.onAdDismissedFullScreenContent()
                 FirebaseValue.IS_INTER_SHOWING = false
@@ -667,6 +695,10 @@ class AdmobInterstitialAd {
 
             override fun onAdFailedToShowFullScreenContent(p0: AdError) {
                 super.onAdFailedToShowFullScreenContent(p0)
+                AdClickDurationTracker.adRequestFail(
+                    adType = AdType.INTERSTITIAL,
+                    adIdReferenceName = adIdReference
+                )
                 admobInterAd = null
                 FirebaseValue.IS_INTER_SHOWING = false
                 adLoadingDialog?.dismissAlertDialog()
