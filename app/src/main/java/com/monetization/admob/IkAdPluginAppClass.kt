@@ -20,7 +20,7 @@ class IkAdPluginAppClass : Application(), Application.ActivityLifecycleCallbacks
     ) {
         if (!isOpenAdInitialized) {
             isOpenAdInitialized = true
-            IkAdSdk.openAppAdController.initOpenAd(this, adRef, enable, openAdControllerListener)
+            IkAdSdk.openAppAdController.initOpenAd(this, adRef, enable)
         }
     }
 
