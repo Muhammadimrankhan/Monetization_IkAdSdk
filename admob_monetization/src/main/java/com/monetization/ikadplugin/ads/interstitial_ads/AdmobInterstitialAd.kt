@@ -184,7 +184,8 @@ class AdmobInterstitialAd {
                     if (!isHandlerRunning) {
                         startHandler()
                     }
-                    AdClickDurationTracker.adRequestCalling(context,
+                    AdClickDurationTracker.adRequestCalling(
+                        context,
                         adType = AdType.INTERSTITIAL,
                         adIdReferenceName = adIdReference
                     )
@@ -212,7 +213,8 @@ class AdmobInterstitialAd {
                                         context, true
                                     )
                                 }
-                                AdClickDurationTracker.adRequestMatch(context,
+                                AdClickDurationTracker.adRequestMatch(
+                                    context,
                                     adType = AdType.INTERSTITIAL,
                                     adIdReferenceName = adIdReference
                                 )
@@ -228,7 +230,8 @@ class AdmobInterstitialAd {
                                     mInterstitialControllerListener?.onAdClosed()
 
                                 }
-                                AdClickDurationTracker.adRequestFail(context,
+                                AdClickDurationTracker.adRequestFail(
+                                    context,
                                     adType = AdType.INTERSTITIAL,
                                     adIdReferenceName = adIdReference
                                 )
@@ -277,7 +280,8 @@ class AdmobInterstitialAd {
         try {
             if (admobInterAd != null && !AdKeys.IS_APP_PAUSE && !AdKeys.isShowingOpenAd) {
                 admobInterAd?.show(activity)
-                AdClickDurationTracker.adShow(activity,
+                AdClickDurationTracker.adShow(
+                    activity,
                     adType = AdType.INTERSTITIAL,
                     adIdReferenceName = adIdReference
                 )
@@ -308,7 +312,8 @@ class AdmobInterstitialAd {
                 }
                 canRequestAd = false
 
-                AdClickDurationTracker.adRequestCalling(mContext,
+                AdClickDurationTracker.adRequestCalling(
+                    mContext,
                     adType = AdType.INTERSTITIAL,
                     adIdReferenceName = adIdReference
                 )
@@ -333,7 +338,8 @@ class AdmobInterstitialAd {
                                 removeCallBacksInstant()
                                 setAdmobFullScreen(activity = mContext, false, "")
                             }
-                            AdClickDurationTracker.adRequestMatch(mContext,
+                            AdClickDurationTracker.adRequestMatch(
+                                mContext,
                                 adType = AdType.INTERSTITIAL,
                                 adIdReferenceName = adIdReference
                             )
@@ -348,7 +354,8 @@ class AdmobInterstitialAd {
                                 removeCallBacksInstant()
                                 mInterstitialControllerListener?.onAdClosed()
                             }
-                            AdClickDurationTracker.adRequestFail(mContext,
+                            AdClickDurationTracker.adRequestFail(
+                                mContext,
                                 adType = AdType.INTERSTITIAL,
                                 adIdReferenceName = adIdReference
                             )
@@ -385,7 +392,8 @@ class AdmobInterstitialAd {
                 }
                 canRequestAd = false
 
-                AdClickDurationTracker.adRequestCalling(mContext,
+                AdClickDurationTracker.adRequestCalling(
+                    mContext,
                     adType = AdType.INTERSTITIAL,
                     adIdReferenceName = adIdReference
                 )
@@ -401,7 +409,8 @@ class AdmobInterstitialAd {
                             canRequestAd = true
                             admobInterAd = p0
 
-                            AdClickDurationTracker.adRequestMatch(mContext,
+                            AdClickDurationTracker.adRequestMatch(
+                                mContext,
                                 adType = AdType.INTERSTITIAL,
                                 adIdReferenceName = adIdReference
                             )
@@ -409,7 +418,8 @@ class AdmobInterstitialAd {
 
                         override fun onAdFailedToLoad(p0: LoadAdError) {
                             super.onAdFailedToLoad(p0)
-                            AdClickDurationTracker.adRequestFail(mContext,
+                            AdClickDurationTracker.adRequestFail(
+                                mContext,
                                 adType = AdType.INTERSTITIAL,
                                 adIdReferenceName = adIdReference
                             )
@@ -439,6 +449,10 @@ class AdmobInterstitialAd {
             removeCallBacksInstant()
             mInterstitialControllerListener?.onAdClosed()
         }
+    }
+
+    fun resetInterstitialCounter() {
+        FirebaseValue.allAppInterstitialAdCount = 0
     }
 
     fun showInterstitial(
@@ -642,7 +656,8 @@ class AdmobInterstitialAd {
         admobInterAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdClicked() {
                 super.onAdClicked()
-                AdClickDurationTracker.startTracking(activity,
+                AdClickDurationTracker.startTracking(
+                    activity,
                     adType = AdType.INTERSTITIAL,
                     adIdReferenceName = adIdReference
                 )
@@ -673,7 +688,8 @@ class AdmobInterstitialAd {
 
             override fun onAdFailedToShowFullScreenContent(p0: AdError) {
                 super.onAdFailedToShowFullScreenContent(p0)
-                AdClickDurationTracker.adRequestFail(activity,
+                AdClickDurationTracker.adRequestFail(
+                    activity,
                     adType = AdType.INTERSTITIAL,
                     adIdReferenceName = adIdReference
                 )
