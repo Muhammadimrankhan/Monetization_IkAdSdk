@@ -33,6 +33,10 @@ object FetchConfig {
         FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE = adsConfig.interstitialPreloadEnable
         FirebaseValue.INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE =
             adsConfig.interstitialPreloadProgressEnable
+        FirebaseValue.REWARDED_INTERSTITIAL_PRE_LOAD_ENABLE =
+            adsConfig.rewardedInterstitialPreloadEnable
+        FirebaseValue.REWARDED_INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE =
+            adsConfig.rewardedInterstitialPreloadProgressEnable
         FirebaseValue.everyNativeCtaColorChangeEnable = adsConfig.everyNativeCtaColorChangeEnable
         FirebaseValue.everyNativeCtaColorList.addAll(adsConfig.everyNativeCtaColor)
         FirebaseValue.darkTheme = adsConfig.darkTheme
@@ -55,6 +59,7 @@ object FetchConfig {
 
     private var networkIdConfig: NetworkIdConfig = NetworkIdConfig(
         interstitialAds = emptyMap(),
+        rewardedInterstitialAds = emptyMap(),
         nativeAdId = emptyMap(),
         bannerAdId = emptyMap(),
         openAppAdId = emptyMap()
@@ -68,6 +73,12 @@ object FetchConfig {
     fun getInterstitialId(referenceName: String): String {
         return networkIdConfig.interstitialAds[referenceName]
             ?: networkIdConfig.interstitialAds["default"] ?: ""
+    }
+
+
+    fun getRewardedInterstitialId(referenceName: String): String {
+        return networkIdConfig.rewardedInterstitialAds[referenceName]
+            ?: networkIdConfig.rewardedInterstitialAds["default"] ?: ""
     }
 
     fun getNativeId(referenceName: String): String {

@@ -10,6 +10,7 @@ import com.monetization.ikadplugin.ads.collapse.AdmobCollapsibleBannerAd
 import com.monetization.ikadplugin.ads.interstitial_ads.AdmobInterstitialAd
 import com.monetization.ikadplugin.ads.native_ads.AdmobNativeAd
 import com.monetization.ikadplugin.ads.open_ap_ads.AdmobOpenAppAd
+import com.monetization.ikadplugin.ads.rewarded_interstitial.AdmobRewardedInterstitialAd
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.one_time_purchase.ProductsPurchaseHelper
@@ -42,6 +43,10 @@ object IkAdSdk {
 
     val interstitialController by lazy {
         AdmobInterstitialAd.getInstance()
+    }
+
+    val rewardedInterstitialController by lazy {
+        AdmobRewardedInterstitialAd.getInstance()
     }
 
     val bannerController by lazy {

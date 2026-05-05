@@ -2,16 +2,21 @@ package com.monetization.ikadplugin.ads_duration_tracker
 
 import android.app.Activity
 import android.app.Application
+import android.content.Context
 import android.os.Bundle
 import android.os.SystemClock
+import android.widget.Toast
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.monetization.ikadplugin.subscription.SubscriptionConstant.isDebug
 
 object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
 
     private const val EVENT_AD_CLICK_RETURN_DURATION = "ad_click_return_duration"
     private const val EVENT_AD_CLICK = "ad_click"
     private const val EVENT_AD_REQUEST_FAIL = "ad_request_fail"
-    private const val EVENT_AD_REQUEST_MATCH = "ad_request_match"
+    private const val EVENT_AD_REQUEST_CALLING = "ad_request_calling"
+    private const val EVENT_AD_REQUEST_MATCH = "ad_request_Loaded"
+    private const val EVENT_AD_USER_EARN_REWARDED = "user_earn_rewarded_value"
     private const val EVENT_AD_SHOW = "ad_show"
 
     private const val PARAM_AD_TYPE = "ad_type"
@@ -44,6 +49,7 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
     }
 
     fun startTracking(
+        context: Context,
         adType: AdType,
         adIdReferenceName: String = ""
     ) {
@@ -53,16 +59,25 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
 
         clickedAdType = adType.firebaseName
         clickedAdIdReferenceName = adIdReferenceName
-        firebaseAnalytics?.logEvent(
-            EVENT_AD_CLICK,
-            Bundle().apply {
-                putString(PARAM_AD_TYPE, clickedAdType)
-                putString(PARAM_AD_ID_REF, clickedAdIdReferenceName)
-            }
-        )
+
+        if (isDebug) {
+            Toast.makeText(
+                context,
+                "$EVENT_AD_CLICK\nAd Type: ${adType.firebaseName}\nAd Ref: $adIdReferenceName",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_CLICK,
+                Bundle().apply {
+                    putString(PARAM_AD_TYPE, clickedAdType)
+                    putString(PARAM_AD_ID_REF, clickedAdIdReferenceName)
+                }
+            )
+        }
     }
 
-    private fun logDurationIfNeeded() {
+    private fun logDurationIfNeeded(context: Context) {
         if (!waitingForAppResume || clickStartTimeMillis <= 0L) return
 
         val durationMillis = SystemClock.elapsedRealtime() - clickStartTimeMillis
@@ -73,17 +88,27 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
         }
 
         val durationSeconds = durationMillis / 1000
-
-        firebaseAnalytics?.logEvent(
-            EVENT_AD_CLICK_RETURN_DURATION,
-            Bundle().apply {
-                putString(PARAM_AD_TYPE, clickedAdType)
-                putString(PARAM_AD_ID_REF, clickedAdIdReferenceName)
-                putLong(PARAM_DURATION_MILLIS, durationMillis)
-                putLong(PARAM_DURATION_SECONDS, durationSeconds)
-            }
-        )
-
+        if (isDebug) {
+            Toast.makeText(
+                context,
+                "$EVENT_AD_CLICK_RETURN_DURATION" +
+                        "\nAd Type: ${clickedAdType}" +
+                        "\nAd Ref: $clickedAdIdReferenceName" +
+                        "\ndurationMillis: ${durationMillis}" +
+                        "\ndurationSeconds: ${durationSeconds}",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_CLICK_RETURN_DURATION,
+                Bundle().apply {
+                    putString(PARAM_AD_TYPE, clickedAdType)
+                    putString(PARAM_AD_ID_REF, clickedAdIdReferenceName)
+                    putLong(PARAM_DURATION_MILLIS, durationMillis)
+                    putLong(PARAM_DURATION_SECONDS, durationSeconds)
+                }
+            )
+        }
         reset()
     }
 
@@ -95,46 +120,122 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
     }
 
     fun adRequestFail(
+        context: Context,
         adType: AdType,
         adIdReferenceName: String = ""
     ) {
         reset()
-        firebaseAnalytics?.logEvent(
-            EVENT_AD_REQUEST_FAIL,
-            Bundle().apply {
-                putString(PARAM_AD_TYPE, adType.firebaseName)
-                putString(PARAM_AD_ID_REF, adIdReferenceName)
-            }
-        )
+
+        if (isDebug) {
+            Toast.makeText(
+                context,
+                "$EVENT_AD_REQUEST_FAIL\nAd Type: ${adType.firebaseName}\nAd Ref: $adIdReferenceName",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_REQUEST_FAIL,
+                Bundle().apply {
+                    putString(PARAM_AD_TYPE, adType.firebaseName)
+                    putString(PARAM_AD_ID_REF, adIdReferenceName)
+                }
+            )
+        }
     }
-    fun adRequestMatch(
+
+    fun adRequestCalling(
+        context: Context,
         adType: AdType,
         adIdReferenceName: String = ""
     ) {
-        firebaseAnalytics?.logEvent(
-            EVENT_AD_REQUEST_MATCH,
-            Bundle().apply {
-                putString(PARAM_AD_TYPE, adType.firebaseName)
-                putString(PARAM_AD_ID_REF, adIdReferenceName)
-            }
-        )
+        reset()
+
+        if (isDebug) {
+            Toast.makeText(
+                context,
+                "$EVENT_AD_REQUEST_CALLING\nAd Type: ${adType.firebaseName}\nAd Ref: $adIdReferenceName",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_REQUEST_CALLING,
+                Bundle().apply {
+                    putString(PARAM_AD_TYPE, adType.firebaseName)
+                    putString(PARAM_AD_ID_REF, adIdReferenceName)
+                }
+            )
+        }
+    }
+
+    fun adRequestMatch(
+        context: Context,
+        adType: AdType,
+        adIdReferenceName: String = ""
+    ) {
+        if (isDebug) {
+            Toast.makeText(
+                context,
+                "$EVENT_AD_REQUEST_MATCH\nAd Type: ${adType.firebaseName}\nAd Ref: $adIdReferenceName",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_REQUEST_MATCH,
+                Bundle().apply {
+                    putString(PARAM_AD_TYPE, adType.firebaseName)
+                    putString(PARAM_AD_ID_REF, adIdReferenceName)
+                }
+            )
+        }
     }
 
     fun adShow(
+        context: Context,
         adType: AdType,
         adIdReferenceName: String = ""
     ) {
-        firebaseAnalytics?.logEvent(
-            EVENT_AD_SHOW,
-            Bundle().apply {
-                putString(PARAM_AD_TYPE, adType.firebaseName)
-                putString(PARAM_AD_ID_REF, adIdReferenceName)
-            }
-        )
+
+        if (isDebug) {
+            Toast.makeText(
+                context,
+                "Firebase Event: $EVENT_AD_SHOW\nAd Type: ${adType.firebaseName}\nAd Ref: $adIdReferenceName",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_SHOW,
+                Bundle().apply {
+                    putString(PARAM_AD_TYPE, adType.firebaseName)
+                    putString(PARAM_AD_ID_REF, adIdReferenceName)
+                }
+            )
+        }
+    }
+
+    fun userEarnedRewardedValue(
+        context: Context,
+        rewardType: String,
+        rewardAmount: Int
+    ) {
+        if (isDebug) {
+            Toast.makeText(
+                context,
+                "$EVENT_AD_USER_EARN_REWARDED\nrewardType: ${rewardType}\nrewardAmount: $rewardAmount",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_USER_EARN_REWARDED,
+                Bundle().apply {
+                    putString("rewardType", rewardType)
+                    putInt("rewardAmount", rewardAmount)
+                }
+            )
+        }
     }
 
     override fun onActivityResumed(activity: Activity) {
-        logDurationIfNeeded()
+        logDurationIfNeeded(activity)
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}

@@ -3,7 +3,6 @@ package com.monetization.ikadplugin.ads.native_ads
 import android.content.Context
 import android.view.View
 import android.widget.LinearLayout
-import android.widget.Toast
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdLoader
 import com.google.android.gms.ads.AdRequest
@@ -17,9 +16,7 @@ import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
-import com.monetization.ikadplugin.BuildConfig
 import com.monetization.ikadplugin.ads.NativeShimmerEffect.addShimmerLayout
-import com.monetization.ikadplugin.ads.interstitial_ads.InterstitialControllerListener
 import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
 import com.monetization.ikadplugin.ads_duration_tracker.AdType
 
@@ -50,8 +47,7 @@ class AdmobNativeAd {
     }
 
     fun preLoadNativeAd(
-        adIdNativeReference: String, adLayout: LinearLayout, context: Context, enable: Boolean,
-        adControllerListener: AdControllerListener
+        adIdNativeReference: String, context: Context, enable: Boolean
     ) {
         try {
             if (!FirebaseValue.ALL_ADS_OFF_ENABLE && GoogleMobileAdsConsentManager.getInstance(
@@ -65,16 +61,18 @@ class AdmobNativeAd {
                         return
                     }
                     canRequestAd = false
-                    adControllerListener.onAdCalling("native_ad_calling")
+                    AdClickDurationTracker.adRequestCalling(context,
+                        adType = AdType.NATIVE,
+                        adIdReferenceName = adIdNativeReference
+                    )
                     val adId = FetchConfig.getNativeId(adIdNativeReference)
                     val builder = AdLoader.Builder(
                         context, adId
                     )
                     builder.forNativeAd { newNativeAd: NativeAd ->
                         canRequestAd = true
-                        adControllerListener.onAdLoaded("native_ad_loaded")
                         largeAndSmallNativeAd = newNativeAd
-                        AdClickDurationTracker.adRequestMatch(
+                        AdClickDurationTracker.adRequestMatch(context,
                             adType = AdType.NATIVE,
                             adIdReferenceName = adIdNativeReference
                         )
@@ -89,7 +87,7 @@ class AdmobNativeAd {
                         override fun onAdClicked() {
                             super.onAdClicked()
 
-                            AdClickDurationTracker.startTracking(
+                            AdClickDurationTracker.startTracking(context,
                                 adType = AdType.NATIVE,
                                 adIdReferenceName = adIdNativeReference
                             )
@@ -97,27 +95,19 @@ class AdmobNativeAd {
 
                         override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                             super.onAdFailedToLoad(loadAdError)
-                            AdClickDurationTracker.adRequestFail(
+                            AdClickDurationTracker.adRequestFail(context,
                                 adType = AdType.NATIVE,
                                 adIdReferenceName = adIdNativeReference
                             )
                             canRequestAd = true
                             largeAndSmallNativeAd = null
-                            adControllerListener.onAdFailed("large native load failed ==> code " + loadAdError.code)
-                            adLayout.removeAllViews()
-                            adLayout.visibility = View.GONE
                         }
                     }).build()
                     adLoader.loadAd(AdRequest.Builder().build())
                 }
-            } else {
-                adControllerListener.onAdPurchased("not_eligible_for_ads")
-                adLayout.removeAllViews()
-                adLayout.visibility = View.GONE
             }
-        } catch (e: Exception) {
-            adLayout.removeAllViews()
-            adLayout.visibility = View.GONE
+        } catch (_: Exception) {
+
         }
     }
 
@@ -131,8 +121,7 @@ class AdmobNativeAd {
         enable: Boolean,
         adFrame: LinearLayout,
         loadNewAd: Boolean = false,
-        nativeCtaColorAdPosition: Int = -1,
-        adControllerListener: AdControllerListener
+        nativeCtaColorAdPosition: Int = -1
     ) {
         if (!FirebaseValue.ALL_ADS_OFF_ENABLE &&
             GoogleMobileAdsConsentManager.getInstance(context).canRequestAds &&
@@ -143,11 +132,10 @@ class AdmobNativeAd {
             if (largeAndSmallNativeAd != null) {
                 largeAndSmallNativeAd?.let {
                     try {
-                        AdClickDurationTracker.adShow(
+                        AdClickDurationTracker.adShow(context,
                             adType = AdType.NATIVE,
                             adIdReferenceName = adIdNativeReference
                         )
-                        adControllerListener.onAlreadyAdLoadedShow("already_load_native_ad_show")
                         NativeViewPopulate.addLargeNativeView(
                             context = context,
                             adFrame = adFrame,
@@ -159,14 +147,11 @@ class AdmobNativeAd {
                         if (loadNewAd) {
                             preLoadNativeAd(
                                 adIdNativeReference,
-                                adFrame,
                                 context,
-                                enable,
-                                adControllerListener
+                                enable
                             )
                         }
                     } catch (e: Exception) {
-                        adControllerListener.onAdException("populateNativeAd exception: ${e.message}")
                         adFrame.removeAllViews()
                         adFrame.visibility = View.GONE
                     }
@@ -179,7 +164,7 @@ class AdmobNativeAd {
                     enable = enable,
                     adViewType = adViewType,
                     loadNewAd = loadNewAd,
-                    nativeCtaColorAdPosition = nativeCtaColorAdPosition, adControllerListener
+                    nativeCtaColorAdPosition = nativeCtaColorAdPosition
                 )
             }
 
@@ -194,8 +179,7 @@ class AdmobNativeAd {
         enable: Boolean,
         adViewType: Int,
         loadNewAd: Boolean = false,
-        nativeCtaColorAdPosition: Int = -1,
-        adControllerListener: AdControllerListener
+        nativeCtaColorAdPosition: Int = -1
     ) {
         try {
             if (!FirebaseValue.ALL_ADS_OFF_ENABLE && GoogleMobileAdsConsentManager.getInstance(
@@ -212,21 +196,23 @@ class AdmobNativeAd {
                         adLayout, adViewType, context
                     )
                     canRequestAd = false
-                    adControllerListener.onAdCalling("native_ad_calling")
+                    AdClickDurationTracker.adRequestCalling(context,
+                        adType = AdType.NATIVE,
+                        adIdReferenceName = adIdNativeReference
+                    )
                     val adId = FetchConfig.getNativeId(adIdNativeReference)
                     val builder = AdLoader.Builder(
                         context, adId
                     )
                     builder.forNativeAd { newNativeAd: NativeAd ->
                         canRequestAd = true
-                        adControllerListener.onAdLoaded("native_ad_loaded")
                         largeAndSmallNativeAd = newNativeAd
-                        AdClickDurationTracker.adRequestMatch(
+                        AdClickDurationTracker.adRequestMatch(context,
                             adType = AdType.NATIVE,
                             adIdReferenceName = adIdNativeReference
                         )
                         largeAndSmallNativeAd?.let {
-                            AdClickDurationTracker.adShow(
+                            AdClickDurationTracker.adShow(context,
                                 adType = AdType.NATIVE,
                                 adIdReferenceName = adIdNativeReference
                             )
@@ -241,10 +227,8 @@ class AdmobNativeAd {
                             if (loadNewAd) {
                                 preLoadNativeAd(
                                     adIdNativeReference,
-                                    adLayout,
                                     context,
-                                    enable,
-                                    adControllerListener
+                                    enable
                                 )
                             }
                         }
@@ -259,7 +243,7 @@ class AdmobNativeAd {
                         override fun onAdClicked() {
                             super.onAdClicked()
 
-                            AdClickDurationTracker.startTracking(
+                            AdClickDurationTracker.startTracking(context,
                                 adType = AdType.NATIVE,
                                 adIdReferenceName = adIdNativeReference
                             )
@@ -267,14 +251,13 @@ class AdmobNativeAd {
 
                         override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                             super.onAdFailedToLoad(loadAdError)
-                            AdClickDurationTracker.adRequestFail(
+                            AdClickDurationTracker.adRequestFail(context,
                                 adType = AdType.NATIVE,
                                 adIdReferenceName = adIdNativeReference
                             )
 
                             canRequestAd = true
                             largeAndSmallNativeAd = null
-                            adControllerListener.onAdFailed("large native load failed ==> code " + loadAdError.code)
                             adLayout.removeAllViews()
                             adLayout.visibility = View.GONE
                         }
@@ -285,7 +268,7 @@ class AdmobNativeAd {
                         addShimmerLayout(
                             adLayout, adViewType, context
                         )
-                        AdClickDurationTracker.adShow(
+                        AdClickDurationTracker.adShow(context,
                             adType = AdType.NATIVE,
                             adIdReferenceName = adIdNativeReference
                         )
@@ -300,16 +283,13 @@ class AdmobNativeAd {
                         if (loadNewAd) {
                             preLoadNativeAd(
                                 adIdNativeReference,
-                                adLayout,
                                 context,
-                                enable,
-                                adControllerListener
+                                enable
                             )
                         }
                     }
                 }
             } else {
-                adControllerListener.onAdPurchased("not_eligible_for_ads")
                 adLayout.removeAllViews()
                 adLayout.visibility = View.GONE
             }
@@ -376,10 +356,8 @@ class AdmobNativeAd {
                             if (loadNewAd) {
                                 preLoadNativeAd(
                                     adIdNativeReference,
-                                    adLayout,
                                     context,
-                                    enable,
-                                    adControllerListener
+                                    enable
                                 )
                             }
 
@@ -397,8 +375,7 @@ class AdmobNativeAd {
                         loadNewAd = loadNewAd,
                         nativeCtaColorAdPosition = nativeCtaColorAdPosition,
                         isFragmentCall = isFragmentCall,
-                        fragmentKey = if (isFragmentCall) fragmentKey else null,
-                        adControllerListener
+                        fragmentKey = if (isFragmentCall) fragmentKey else null
                     )
                 }
             } else {
@@ -420,8 +397,7 @@ class AdmobNativeAd {
         loadNewAd: Boolean = false,
         nativeCtaColorAdPosition: Int = -1,
         isFragmentCall: Boolean = false,
-        fragmentKey: String? = null,
-        adControllerListener: AdControllerListener
+        fragmentKey: String? = null
     ) {
         try {
             if (!FirebaseValue.ALL_ADS_OFF_ENABLE &&
@@ -443,20 +419,22 @@ class AdmobNativeAd {
                 }
                 addShimmerLayout(adLayout, adViewType, context)
                 canRequestAd = false
-                adControllerListener.onAdCalling("native_ad_calling")
+                AdClickDurationTracker.adRequestCalling(context,
+                    adType = AdType.NATIVE,
+                    adIdReferenceName = adIdNativeReference
+                )
                 val adId = FetchConfig.getNativeId(adIdNativeReference)
                 val builder = AdLoader.Builder(context, adId)
 
                 builder.forNativeAd { newNativeAd: NativeAd ->
                     canRequestAd = true
-                    adControllerListener.onAdLoaded("native_ad_loaded")
                     largeAndSmallNativeAd = newNativeAd
-                    AdClickDurationTracker.adRequestMatch(
+                    AdClickDurationTracker.adRequestMatch(context,
                         adType = AdType.NATIVE,
                         adIdReferenceName = adIdNativeReference
                     )
                     largeAndSmallNativeAd?.let {
-                        AdClickDurationTracker.adShow(
+                        AdClickDurationTracker.adShow(context,
                             adType = AdType.NATIVE,
                             adIdReferenceName = adIdNativeReference
                         )
@@ -475,10 +453,8 @@ class AdmobNativeAd {
                         if (loadNewAd) {
                             preLoadNativeAd(
                                 adIdNativeReference,
-                                adLayout,
                                 context,
-                                enable,
-                                adControllerListener
+                                enable
                             )
                         }
                     }
@@ -494,7 +470,7 @@ class AdmobNativeAd {
                     override fun onAdClicked() {
                         super.onAdClicked()
 
-                        AdClickDurationTracker.startTracking(
+                        AdClickDurationTracker.startTracking(context,
                             adType = AdType.NATIVE,
                             adIdReferenceName = adIdNativeReference
                         )
@@ -502,13 +478,12 @@ class AdmobNativeAd {
 
                     override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                         super.onAdFailedToLoad(loadAdError)
-                        AdClickDurationTracker.adRequestFail(
+                        AdClickDurationTracker.adRequestFail(context,
                             adType = AdType.NATIVE,
                             adIdReferenceName = adIdNativeReference
                         )
                         canRequestAd = true
                         largeAndSmallNativeAd = null
-                        adControllerListener.onAdLoaded("large native load failed ==> code " + loadAdError.code)
                         adLayout.removeAllViews()
                         adLayout.visibility = View.GONE
                     }
