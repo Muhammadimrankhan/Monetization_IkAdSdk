@@ -68,9 +68,10 @@ class AdmobBannerAd {
 
                     canRequestAd = false
 
-                    if (isDebug) {
-                        Toast.makeText(context, "banner ad calling", Toast.LENGTH_SHORT).show()
-                    }
+                    AdClickDurationTracker.adRequestCalling(context,
+                        adType = AdType.BANNER,
+                        adIdReferenceName = adReference
+                    )
 
                     val adId = FetchConfig.getBannerId(adReference)
 
@@ -87,7 +88,7 @@ class AdmobBannerAd {
                         override fun onAdClicked() {
                             super.onAdClicked()
 
-                            AdClickDurationTracker.startTracking(
+                            AdClickDurationTracker.startTracking(context,
                                 adType = AdType.BANNER,
                                 adIdReferenceName = adReference
                             )
@@ -97,7 +98,7 @@ class AdmobBannerAd {
 
                             canRequestAd = true
                             bannerAdView = adView
-                            AdClickDurationTracker.adRequestMatch(
+                            AdClickDurationTracker.adRequestMatch(context,
                                 adType = AdType.BANNER,
                                 adIdReferenceName = adReference
                             )
@@ -111,7 +112,7 @@ class AdmobBannerAd {
 
                             canRequestAd = true
                             bannerAdView = null
-                            AdClickDurationTracker.adRequestFail(
+                            AdClickDurationTracker.adRequestFail(context,
                                 adType = AdType.BANNER,
                                 adIdReferenceName = adReference
                             )
@@ -157,7 +158,7 @@ class AdmobBannerAd {
                     adLayout.removeAllViews()
                     adLayout.addView(it)
                     bannerAdView = null
-                    AdClickDurationTracker.adShow(
+                    AdClickDurationTracker.adShow(context,
                         adType = AdType.BANNER,
                         adIdReferenceName = adReference
                     )
@@ -205,6 +206,10 @@ class AdmobBannerAd {
                     if (!canRequestAd) return
 
                     canRequestAd = false
+                    AdClickDurationTracker.adRequestCalling(context,
+                        adType = AdType.BANNER,
+                        adIdReferenceName = adReference
+                    )
                     addShimmerLayout(adLayout, 2, context)
 
                     val adId = FetchConfig.getBannerId(adReference)
@@ -221,7 +226,7 @@ class AdmobBannerAd {
                         override fun onAdClicked() {
                             super.onAdClicked()
 
-                            AdClickDurationTracker.startTracking(
+                            AdClickDurationTracker.startTracking(context,
                                 adType = AdType.BANNER,
                                 adIdReferenceName = adReference
                             )
@@ -231,7 +236,10 @@ class AdmobBannerAd {
 
                             canRequestAd = true
                             bannerAdView = adView
-
+                            AdClickDurationTracker.adRequestMatch(context,
+                                adType = AdType.BANNER,
+                                adIdReferenceName = adReference
+                            )
                             bannerAdView?.let {
 
                                 it.parent?.let { parent ->
@@ -241,7 +249,7 @@ class AdmobBannerAd {
                                 adLayout.visibility = View.VISIBLE
                                 adLayout.removeAllViews()
                                 adLayout.addView(it)
-                                AdClickDurationTracker.adShow(
+                                AdClickDurationTracker.adShow(context,
                                     adType = AdType.BANNER,
                                     adIdReferenceName = adReference
                                 )
@@ -251,7 +259,7 @@ class AdmobBannerAd {
                                     loadBannerAd(adReference, context, enable, isRectangleBanner)
                                 }
                             }
-                            AdClickDurationTracker.adRequestMatch(
+                            AdClickDurationTracker.adRequestMatch(context,
                                 adType = AdType.BANNER,
                                 adIdReferenceName = adReference
                             )
@@ -261,7 +269,7 @@ class AdmobBannerAd {
 
                             canRequestAd = true
                             bannerAdView = null
-                            AdClickDurationTracker.adRequestFail(
+                            AdClickDurationTracker.adRequestFail(context,
                                 adType = AdType.BANNER,
                                 adIdReferenceName = adReference
                             )
@@ -279,7 +287,7 @@ class AdmobBannerAd {
                         adLayout.visibility = View.VISIBLE
                         adLayout.removeAllViews()
                         adLayout.addView(it)
-                        AdClickDurationTracker.adShow(
+                        AdClickDurationTracker.adShow(context,
                             adType = AdType.BANNER,
                             adIdReferenceName = adReference
                         )

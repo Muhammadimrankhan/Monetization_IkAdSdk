@@ -20,6 +20,8 @@ data class AdsConfig(
     val progressLoadingOpenAppEnable: Boolean = true,
     val interstitialPreloadEnable: Boolean = false,
     val interstitialPreloadProgressEnable: Boolean = false,
+    val rewardedInterstitialPreloadEnable: Boolean = false,
+    val rewardedInterstitialPreloadProgressEnable: Boolean = false,
     val everyNativeCtaColorChangeEnable: Boolean = false,
     val everyNativeCtaColor: List<GradientColors> = emptyList(),
     val darkTheme: Boolean = false
