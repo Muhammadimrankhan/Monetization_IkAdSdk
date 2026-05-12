@@ -49,6 +49,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     private var adRef = ""
     private var adLoadingDialog: AdLoadingDialog? = null
     private var appContext: Context? = null
+    private var isObserverRegistered = false
 
 
     fun initOpenAd(
@@ -57,20 +58,60 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
         this.adRef = adRef
         this.appContext = context
         this.openAdEnable = openAdEnable
-        runCatching {
-            ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-        }.onFailure {
-            Log.e("OpenAd", "Failed to add lifecycle observer", it)
+        if (!isObserverRegistered) {
+            runCatching {
+                ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+                isObserverRegistered = true
+            }.onFailure {
+                Log.e("OpenAd", "Failed to add lifecycle observer", it)
+                AdClickDurationTracker.error(
+                    context,
+                    adType = "APP_OPEN",
+                    stage = "LIFECYCLE_ADD_OBSERVER",
+                    placement = adRef,
+                    throwable = it,
+                    message = "Failed to register process lifecycle observer."
+                )
+            }
         }
 
     }
 
+    fun releaseOpenAd() {
+        runCatching {
+            if (isObserverRegistered) {
+                ProcessLifecycleOwner.get().lifecycle.removeObserver(this)
+                isObserverRegistered = false
+            }
+        }.onFailure {
+            Log.e("OpenAd", "Failed to remove lifecycle observer", it)
+            val ctx = appContext ?: return
+
+            AdClickDurationTracker.error(
+                ctx,
+                adType = "APP_OPEN",
+                stage = "LIFECYCLE_REMOVE_OBSERVER",
+                placement = adRef,
+                throwable = it,
+                message = "Failed to unregister process lifecycle observer."
+            )
+        }
+        hideProgress()
+        mAppOpenAd = null
+        appContext = null
+    }
+
+    fun openAppAdDisableWhenPermissionCheck() {
+        AdKeys.isPermissionCheck = true
+    }
+
     override fun onStart(owner: LifecycleOwner) {
         super.onStart(owner)
+        val ctx = appContext ?: return
         try {
             AdKeys.IS_APP_PAUSE = false
-            if (AdKeys.canShowOpenAd && !AdSharedPreference.getInstance(
-                    appContext!!
+            if (!AdKeys.isPermissionCheck && AdKeys.canShowOpenAd && !AdSharedPreference.getInstance(
+                    ctx
                 ).isAppPurchased && openAdEnable
             ) {
                 Handler(Looper.getMainLooper()).postDelayed({
@@ -78,10 +119,27 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                         showOpenAd()
                     } else {
                         Log.e("OpenAd", "Activity still null after delay")
+                        AdClickDurationTracker.warn(
+                            ctx,
+                            adType = "APP_OPEN",
+                            stage = "ON_START",
+                            placement = adRef,
+                            message = "Current activity is null; skipping open ad display."
+                        )
                     }
                 }, 300)
+            } else {
+                AdKeys.isPermissionCheck = false
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            AdClickDurationTracker.error(
+                ctx,
+                adType = "APP_OPEN",
+                stage = "ON_START",
+                placement = adRef,
+                throwable = e,
+                message = "Exception while handling app onStart for open ad."
+            )
         }
     }
 
@@ -98,7 +156,8 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
             return
         }
         canRequestAd = false
-        AdClickDurationTracker.adRequestCalling(ctx,
+        AdClickDurationTracker.adRequestCalling(
+            ctx,
             adType = AdType.APP_OPEN,
             adIdReferenceName = adRef
         )
@@ -113,7 +172,8 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                     canRequestAd = true
                     mAppOpenAd = appOpenAd
                     loadTime = Date().time
-                    AdClickDurationTracker.adRequestMatch(ctx,
+                    AdClickDurationTracker.adRequestMatch(
+                        ctx,
                         adType = AdType.APP_OPEN,
                         adIdReferenceName = adRef
                     )
@@ -121,7 +181,8 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
 
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                     super.onAdFailedToLoad(loadAdError)
-                    AdClickDurationTracker.adRequestFail(ctx,
+                    AdClickDurationTracker.adRequestFail(
+                        ctx,
                         adType = AdType.APP_OPEN,
                         adIdReferenceName = adRef
                     )
@@ -136,21 +197,44 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
             hideProgress()
             adLoadingDialog = AdLoadingDialog(activity)
             adLoadingDialog?.showAlertDialog()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            AdClickDurationTracker.warn(
+                activity,
+                adType = "APP_OPEN",
+                stage = "PROGRESS_SHOW",
+                placement = adRef,
+                message = "Unable to show open-ad progress: ${e.message}"
+            )
         }
     }
 
     private fun hideProgress() {
         try {
             adLoadingDialog?.dismissAlertDialog()
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            val ctx = appContext ?: return
+            AdClickDurationTracker.warn(
+                ctx,
+                adType = "APP_OPEN",
+                stage = "PROGRESS_HIDE",
+                placement = adRef,
+                message = "Unable to hide open-ad progress: ${e.message}"
+            )
         }
     }
 
     private fun setBlackColor() {
         try {
             adLoadingDialog?.setBlackColor()
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            val ctx = appContext ?: return
+            AdClickDurationTracker.warn(
+                ctx,
+                adType = "APP_OPEN",
+                stage = "PROGRESS_STYLE",
+                placement = adRef,
+                message = "Unable to apply open-ad progress styling: ${e.message}"
+            )
         }
     }
 
@@ -176,6 +260,14 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                     nowShowAd(mContext, callback)
                 }, 1000)
             } catch (e: Exception) {
+                AdClickDurationTracker.error(
+                    mContext,
+                    adType = "APP_OPEN",
+                    stage = "SHOW_PROGRESS",
+                    placement = adRef,
+                    throwable = e,
+                    message = "Failed showing open-ad loading progress."
+                )
                 nowShowAd(mContext, callback)
             }
         } else {
@@ -192,7 +284,8 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                 override fun onAdClicked() {
                     super.onAdClicked()
 
-                    AdClickDurationTracker.startTracking(mContext,
+                    AdClickDurationTracker.startTracking(
+                        mContext,
                         adType = AdType.APP_OPEN,
                         adIdReferenceName = adRef
                     )
@@ -214,7 +307,8 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
 
                 override fun onAdFailedToShowFullScreenContent(p0: AdError) {
                     super.onAdFailedToShowFullScreenContent(p0)
-                    AdClickDurationTracker.adRequestFail(mContext,
+                    AdClickDurationTracker.adRequestFail(
+                        mContext,
                         adType = AdType.APP_OPEN,
                         adIdReferenceName = adRef
                     )
@@ -224,7 +318,8 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                     AdKeys.isShowingOpenAd = false
                 }
             }
-            AdClickDurationTracker.adShow(mContext,
+            AdClickDurationTracker.adShow(
+                mContext,
                 adType = AdType.APP_OPEN,
                 adIdReferenceName = adRef
             )

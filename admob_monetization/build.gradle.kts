@@ -43,7 +43,7 @@ android {
     }
 }
 group = "com.github.Muhammadimrankhan"
-version = "0.1.11_meta"
+version = "0.1.12"
 
 
 afterEvaluate {
@@ -53,11 +53,12 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.Muhammadimrankhan"
                 artifactId = "Monetization_IkAdSdk"
-                version = "0.1.11_meta"
+                version = "0.1.12"
             }
         }
     }
 }
+
 dependencies {
     implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
@@ -74,7 +75,6 @@ dependencies {
 
     // Add the dependency for the Analytics library
     // When using the BoM, you don't specify versions in Firebase library dependencies
-    implementation("com.google.ads.mediation:facebook:6.21.0.2")
     implementation("com.google.firebase:firebase-analytics")
 
 }
