@@ -2,6 +2,7 @@ package com.monetization.ikadplugin.network_instance
 
 import android.app.Activity
 import android.content.Context
+import com.facebook.ads.AudienceNetworkAds
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.RequestConfiguration
 import com.monetization.ikadplugin.BuildConfig
@@ -113,6 +114,10 @@ object IkAdSdk {
                 } catch (_: NoSuchMethodError) {
                 } catch (_: VerifyError) {
                 } catch (_: OutOfMemoryError) {
+                }
+                try {
+                    AudienceNetworkAds.initialize(context)
+                } catch (_: Exception) {
                 }
             }
 
