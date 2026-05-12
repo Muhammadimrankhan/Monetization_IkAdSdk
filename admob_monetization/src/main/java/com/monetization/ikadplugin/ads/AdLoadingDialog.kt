@@ -12,10 +12,11 @@ class AdLoadingDialog(private val activity: Activity?) {
     private var alertDialog1: AlertDialog? = null
     fun showAlertDialog() {
         try {
-            if (activity != null && !activity.isFinishing && !activity.isDestroyed) {
-                if (!alertDialog1!!.isShowing) {
-                    alertDialog1?.show()
-                }
+            val currentActivity = activity ?: return
+            if (currentActivity.isFinishing || currentActivity.isDestroyed) return
+            val dialog = alertDialog1 ?: return
+            if (!dialog.isShowing) {
+                dialog.show()
             }
         } catch (ignored: Exception) {
         }
@@ -33,10 +34,11 @@ class AdLoadingDialog(private val activity: Activity?) {
 //    }
     fun dismissAlertDialog() {
         try {
-            if (activity != null && !activity.isFinishing && !activity.isDestroyed) {
-                if (alertDialog1!!.isShowing) {
-                    alertDialog1?.dismiss()
-                }
+            val currentActivity = activity ?: return
+            if (currentActivity.isFinishing || currentActivity.isDestroyed) return
+            val dialog = alertDialog1 ?: return
+            if (dialog.isShowing) {
+                dialog.dismiss()
             }
         } catch (ignored: Exception) {
         }

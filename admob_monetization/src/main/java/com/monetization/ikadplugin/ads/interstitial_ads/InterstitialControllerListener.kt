@@ -5,4 +5,5 @@ interface InterstitialControllerListener {
     fun onAdLoaded()
     fun onSplashAdViewGone()
     fun onIapShow()
+    fun onUserEarnedReward(rewardType: String, rewardAmount: Int) {}
 }

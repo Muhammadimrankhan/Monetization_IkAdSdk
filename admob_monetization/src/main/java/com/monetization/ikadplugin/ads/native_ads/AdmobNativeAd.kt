@@ -37,6 +37,21 @@ class AdmobNativeAd {
     private var canRequestAd = true
     private var largeAndSmallNativeAd: NativeAd? = null
 
+    private fun clearNativeAd(context: Context) {
+        try {
+            largeAndSmallNativeAd?.destroy()
+        } catch (e: Exception) {
+            AdClickDurationTracker.warn(context,
+                adType = "NATIVE",
+                stage = "DESTROY",
+                placement = "unknown",
+                message = "Failed destroying native ad: ${e.message}"
+            )
+        } finally {
+            largeAndSmallNativeAd = null
+        }
+    }
+
 
     fun hasLargeAdOrLoading(): Boolean {
         return (largeAndSmallNativeAd != null || !canRequestAd)
@@ -100,14 +115,20 @@ class AdmobNativeAd {
                                 adIdReferenceName = adIdNativeReference
                             )
                             canRequestAd = true
-                            largeAndSmallNativeAd = null
+                            clearNativeAd(context)
                         }
                     }).build()
                     adLoader.loadAd(AdRequest.Builder().build())
                 }
             }
-        } catch (_: Exception) {
-
+        } catch (e: Exception) {
+            AdClickDurationTracker.error(context,
+                adType = "NATIVE",
+                stage = "PRELOAD",
+                placement = adIdNativeReference,
+                throwable = e,
+                message = "Native preload flow failed."
+            )
         }
     }
 
@@ -143,7 +164,7 @@ class AdmobNativeAd {
                             adViewType = adViewType,
                             nativeCtaColorAdPosition = nativeCtaColorAdPosition
                         )
-                        largeAndSmallNativeAd = null
+                        clearNativeAd(context)
                         if (loadNewAd) {
                             preLoadNativeAd(
                                 adIdNativeReference,
@@ -152,6 +173,12 @@ class AdmobNativeAd {
                             )
                         }
                     } catch (e: Exception) {
+                        AdClickDurationTracker.warn(context,
+                            adType = "NATIVE",
+                            stage = "POPULATE",
+                            placement = adIdNativeReference,
+                            message = "Native populate failed: ${e.message}"
+                        )
                         adFrame.removeAllViews()
                         adFrame.visibility = View.GONE
                     }
@@ -223,7 +250,7 @@ class AdmobNativeAd {
                                 adViewType = adViewType,
                                 nativeCtaColorAdPosition = nativeCtaColorAdPosition
                             )
-                            largeAndSmallNativeAd = null
+                            clearNativeAd(context)
                             if (loadNewAd) {
                                 preLoadNativeAd(
                                     adIdNativeReference,
@@ -257,7 +284,7 @@ class AdmobNativeAd {
                             )
 
                             canRequestAd = true
-                            largeAndSmallNativeAd = null
+                            clearNativeAd(context)
                             adLayout.removeAllViews()
                             adLayout.visibility = View.GONE
                         }
@@ -279,7 +306,7 @@ class AdmobNativeAd {
                             adViewType = adViewType,
                             nativeCtaColorAdPosition = nativeCtaColorAdPosition
                         )
-                        largeAndSmallNativeAd = null
+                        clearNativeAd(context)
                         if (loadNewAd) {
                             preLoadNativeAd(
                                 adIdNativeReference,
@@ -294,6 +321,13 @@ class AdmobNativeAd {
                 adLayout.visibility = View.GONE
             }
         } catch (e: Exception) {
+            AdClickDurationTracker.error(context,
+                adType = "NATIVE",
+                stage = "LOAD_AND_SHOW",
+                placement = adIdNativeReference,
+                throwable = e,
+                message = "Native load-and-show flow failed."
+            )
             adLayout.removeAllViews()
             adLayout.visibility = View.GONE
         }
@@ -311,7 +345,6 @@ class AdmobNativeAd {
     }
 
     fun populateNativeAdForFragment(
-        adLayout: LinearLayout,
         adViewType: Int,
         adIdNativeReference: String,
         context: Context,
@@ -320,8 +353,7 @@ class AdmobNativeAd {
         loadNewAd: Boolean = false,
         nativeCtaColorAdPosition: Int = -1,
         isFragmentCall: Boolean = false,
-        fragmentKey: String? = null,
-        adControllerListener: AdControllerListener
+        fragmentKey: String? = null
     ) {
         try {
             if (!FirebaseValue.ALL_ADS_OFF_ENABLE &&
@@ -341,7 +373,6 @@ class AdmobNativeAd {
                 if (largeAndSmallNativeAd != null) {
                     largeAndSmallNativeAd?.let { ad ->
                         try {
-                            adControllerListener.onAlreadyAdLoadedShow("already_load_native_ad_show")
                             NativeViewPopulate.addLargeNativeView(
                                 context = context,
                                 adFrame = adFrame,
@@ -352,7 +383,7 @@ class AdmobNativeAd {
                             if (isFragmentCall && !fragmentKey.isNullOrEmpty()) {
                                 shownFragmentAds.add(fragmentKey)
                             }
-                            largeAndSmallNativeAd = null
+                            clearNativeAd(context)
                             if (loadNewAd) {
                                 preLoadNativeAd(
                                     adIdNativeReference,
@@ -368,7 +399,7 @@ class AdmobNativeAd {
                 } else {
                     loadAndShowNativeAdForFragment(
                         adIdNativeReference = adIdNativeReference,
-                        adLayout = adLayout,
+                        adLayout = adFrame,
                         context = context,
                         enable = enable,
                         adViewType = adViewType,
@@ -379,12 +410,12 @@ class AdmobNativeAd {
                     )
                 }
             } else {
-                adLayout.removeAllViews()
-                adLayout.visibility = View.GONE
+                adFrame.removeAllViews()
+                adFrame.visibility = View.GONE
             }
         } catch (e: Exception) {
-            adLayout.removeAllViews()
-            adLayout.visibility = View.GONE
+            adFrame.removeAllViews()
+            adFrame.visibility = View.GONE
         }
     }
 
@@ -448,7 +479,7 @@ class AdmobNativeAd {
                         if (isFragmentCall && !fragmentKey.isNullOrEmpty()) {
                             shownFragmentAds.add(fragmentKey)
                         }
-                        largeAndSmallNativeAd = null
+                        clearNativeAd(context)
 
                         if (loadNewAd) {
                             preLoadNativeAd(
@@ -483,7 +514,7 @@ class AdmobNativeAd {
                             adIdReferenceName = adIdNativeReference
                         )
                         canRequestAd = true
-                        largeAndSmallNativeAd = null
+                        clearNativeAd(context)
                         adLayout.removeAllViews()
                         adLayout.visibility = View.GONE
                     }

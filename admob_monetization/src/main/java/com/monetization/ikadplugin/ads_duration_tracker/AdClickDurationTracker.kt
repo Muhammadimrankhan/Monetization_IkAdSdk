@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Bundle
 import android.os.SystemClock
+import android.util.Log
 import android.widget.Toast
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.monetization.ikadplugin.subscription.SubscriptionConstant.isDebug
@@ -15,6 +16,8 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
     private const val EVENT_AD_CLICK = "ad_click"
     private const val EVENT_AD_REQUEST_FAIL = "ad_request_fail"
     private const val EVENT_AD_REQUEST_CALLING = "ad_request_calling"
+    private const val EVENT_AD_REQUEST_WARN = "ad_request_warning"
+    private const val EVENT_AD_REQUEST_ERROR = "ad_request_error"
     private const val EVENT_AD_REQUEST_MATCH = "ad_request_Loaded"
     private const val EVENT_AD_USER_EARN_REWARDED = "user_earn_rewarded_value"
     private const val EVENT_AD_SHOW = "ad_show"
@@ -39,9 +42,9 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
     private var clickedAdType: String = ""
     private var clickedAdIdReferenceName: String = ""
 
+
     fun init(application: Application) {
         if (isRegistered) return
-
         firebaseAnalytics = FirebaseAnalytics.getInstance(application)
         application.registerActivityLifecycleCallbacks(this)
 
@@ -198,7 +201,7 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
         if (isDebug) {
             Toast.makeText(
                 context,
-                "Firebase Event: $EVENT_AD_SHOW\nAd Type: ${adType.firebaseName}\nAd Ref: $adIdReferenceName",
+                "$EVENT_AD_SHOW\nAd Type: ${adType.firebaseName}\nAd Ref: $adIdReferenceName",
                 Toast.LENGTH_SHORT
             ).show()
         } else {
@@ -207,6 +210,62 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
                 Bundle().apply {
                     putString(PARAM_AD_TYPE, adType.firebaseName)
                     putString(PARAM_AD_ID_REF, adIdReferenceName)
+                }
+            )
+        }
+    }
+
+    fun warn(
+        context: Context,
+        adType: String,
+        stage: String,
+        placement: String,
+        message: String
+    ) {
+
+        if (isDebug) {
+            Toast.makeText(
+                context,
+                "$EVENT_AD_REQUEST_WARN\n[$adType][$stage][$placement] $message",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_REQUEST_WARN,
+                Bundle().apply {
+                    putString("adType", adType)
+                    putString("stage", stage)
+                    putString("placement", placement)
+                    putString("message", message)
+                }
+            )
+        }
+    }
+
+    fun error(
+        context: Context,
+        adType: String,
+        stage: String,
+        placement: String,
+        throwable: Throwable? = null,
+        message: String
+    ) {
+
+        if (isDebug) {
+            Toast.makeText(
+                context,
+                "$EVENT_AD_REQUEST_ERROR\n[$adType][$stage][$placement] $message ${throwable?.message}",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_REQUEST_ERROR,
+                Bundle().apply {
+                    putString("adType", adType)
+                    putString("stage", stage)
+                    putString("placement", placement)
+                    putString("message", message)
+                    putString("throwable", throwable?.message)
                 }
             )
         }
