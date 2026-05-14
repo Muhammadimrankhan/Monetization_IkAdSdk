@@ -99,6 +99,7 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
+
         FetchConfig.initializeNetWorkId(networkConfig)
     }
 }
