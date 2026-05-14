@@ -44,7 +44,7 @@ class AdmobRewardedInterstitialAd {
     private var isExitAppCall = false
     private var canRequestAd = true
     private var admobInterAd: RewardedInterstitialAd? = null
-    private var mInterstitialControllerListener: InterstitialControllerListener? = null
+    private var mInterstitialControllerListener: RewardedInterstitialControllerListener? = null
     private var adIdReference = ""
     private var isHandlerRunningInstant = false
     private var canDispatchTerminalCallback = false
@@ -173,8 +173,9 @@ class AdmobRewardedInterstitialAd {
                             if (!FirebaseValue.REWARDED_INTERSTITIAL_PRE_LOAD_ENABLE && isHandlerRunningInstant) {
                                 adLoadingDialog?.dismissAlertDialog()
                                 removeCallBacksInstant()
-                                notifyAdClosedOnce()
                             }
+                            canDispatchTerminalCallback = false
+                            mInterstitialControllerListener?.onAdFailed()
                             AdClickDurationTracker.adRequestFail(mContext,
                                 adType = AdType.REWARDED_INTERSTITIAL,
                                 adIdReferenceName = adIdReferenceName
@@ -204,7 +205,8 @@ class AdmobRewardedInterstitialAd {
 
 
     fun preLoadAd(
-        adIdReferenceName: String, mContext: AppCompatActivity
+        adIdReferenceName: String, mContext: AppCompatActivity,
+        interstitialControllerListener: RewardedInterstitialControllerListener
     ) {
         try {
             if (!AdSharedPreference.getInstance(mContext).isAppPurchased && InternetController.getInstance(
@@ -248,6 +250,8 @@ class AdmobRewardedInterstitialAd {
                                 adType = AdType.REWARDED_INTERSTITIAL,
                                 adIdReferenceName = adIdReferenceName
                             )
+                            canDispatchTerminalCallback = false
+                            interstitialControllerListener.onAdFailed()
                             canRequestAd = true
                             admobInterAd = null
                         }
@@ -287,7 +291,7 @@ class AdmobRewardedInterstitialAd {
         adIdString: String,
         activity: Activity,
         enable: Boolean,
-        interstitialControllerListener: InterstitialControllerListener
+        interstitialControllerListener: RewardedInterstitialControllerListener
     ) {
         mInterstitialControllerListener = interstitialControllerListener
         markTerminalPending()
@@ -312,7 +316,7 @@ class AdmobRewardedInterstitialAd {
         adIdString: String,
         activity: Activity,
         enableAds: Boolean,
-        interstitialControllerListener: InterstitialControllerListener
+        interstitialControllerListener: RewardedInterstitialControllerListener
     ) {
         mInterstitialControllerListener = interstitialControllerListener
         markTerminalPending()
@@ -472,7 +476,6 @@ class AdmobRewardedInterstitialAd {
             override fun onAdShowedFullScreenContent() {
                 super.onAdShowedFullScreenContent()
                 FirebaseValue.IS_INTER_SHOWING = true
-                mInterstitialControllerListener?.onSplashAdViewGone()
                 adLoadingDialog?.dismissAlertDialog()
                 admobInterAd = null
             }
@@ -486,7 +489,8 @@ class AdmobRewardedInterstitialAd {
                 admobInterAd = null
                 FirebaseValue.IS_INTER_SHOWING = false
                 adLoadingDialog?.dismissAlertDialog()
-                notifyAdClosedOnce()
+                canDispatchTerminalCallback = false
+                mInterstitialControllerListener?.onAdFailed()
                 if (FirebaseValue.REWARDED_INTERSTITIAL_PRE_LOAD_ENABLE) {
                     loadRewardedAd(adIdString, activity)
                 }
