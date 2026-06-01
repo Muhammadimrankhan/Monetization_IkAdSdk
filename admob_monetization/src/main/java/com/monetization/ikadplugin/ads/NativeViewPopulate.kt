@@ -160,7 +160,7 @@ object NativeViewPopulate {
             gd.colors = colors
             gd.shape = GradientDrawable.RECTANGLE
             gd.cornerRadius = 20f
-            gd.setStroke(2, Color.WHITE)
+            gd.setStroke(2, FirebaseValue.colorNativeBgBorderStokes.toColorInt())
             bg.background = gd
         } else {
             if (nativeAdsBgColorChange) {
