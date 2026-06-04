@@ -61,9 +61,9 @@ object NativeViewPopulate {
         if (nativeAdsAttributionColorChange) {
             adText.setTextColor(FirebaseValue.colorAdsAttribNative.toColorInt())
         }
-        adView.callToActionView = button
-        adView.iconView = adView.findViewById(R.id.ad_app_icon)
 //        adView.callToActionView = button
+        adView.iconView = adView.findViewById(R.id.ad_app_icon)
+        adView.callToActionView = button
         if (FirebaseValue.everyNativeCtaColorChangeEnable) {
             val gradient = when {
                 everyNativeCtaColorList.isEmpty() -> null

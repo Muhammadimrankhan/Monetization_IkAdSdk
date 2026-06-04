@@ -37,7 +37,11 @@ class AdmobNativeAd {
     private var canRequestAd = true
     private var largeAndSmallNativeAd: NativeAd? = null
 
-    private fun clearNativeAd(context: Context) {
+    private fun clearNativeAd() {
+        largeAndSmallNativeAd = null
+    }
+
+     fun onDestroyNativeAd(context: Context) {
         try {
             largeAndSmallNativeAd?.destroy()
         } catch (e: Exception) {
@@ -115,7 +119,7 @@ class AdmobNativeAd {
                                 adIdReferenceName = adIdNativeReference
                             )
                             canRequestAd = true
-                            clearNativeAd(context)
+                            clearNativeAd()
                         }
                     }).build()
                     adLoader.loadAd(AdRequest.Builder().build())
@@ -164,7 +168,7 @@ class AdmobNativeAd {
                             adViewType = adViewType,
                             nativeCtaColorAdPosition = nativeCtaColorAdPosition
                         )
-                        clearNativeAd(context)
+                        clearNativeAd()
                         if (loadNewAd) {
                             preLoadNativeAd(
                                 adIdNativeReference,
@@ -250,7 +254,7 @@ class AdmobNativeAd {
                                 adViewType = adViewType,
                                 nativeCtaColorAdPosition = nativeCtaColorAdPosition
                             )
-                            clearNativeAd(context)
+                            clearNativeAd()
                             if (loadNewAd) {
                                 preLoadNativeAd(
                                     adIdNativeReference,
@@ -284,7 +288,7 @@ class AdmobNativeAd {
                             )
 
                             canRequestAd = true
-                            clearNativeAd(context)
+                            clearNativeAd()
                             adLayout.removeAllViews()
                             adLayout.visibility = View.GONE
                         }
@@ -306,7 +310,7 @@ class AdmobNativeAd {
                             adViewType = adViewType,
                             nativeCtaColorAdPosition = nativeCtaColorAdPosition
                         )
-                        clearNativeAd(context)
+                        clearNativeAd()
                         if (loadNewAd) {
                             preLoadNativeAd(
                                 adIdNativeReference,
@@ -383,7 +387,7 @@ class AdmobNativeAd {
                             if (isFragmentCall && !fragmentKey.isNullOrEmpty()) {
                                 shownFragmentAds.add(fragmentKey)
                             }
-                            clearNativeAd(context)
+                            clearNativeAd()
                             if (loadNewAd) {
                                 preLoadNativeAd(
                                     adIdNativeReference,
@@ -479,7 +483,7 @@ class AdmobNativeAd {
                         if (isFragmentCall && !fragmentKey.isNullOrEmpty()) {
                             shownFragmentAds.add(fragmentKey)
                         }
-                        clearNativeAd(context)
+                        clearNativeAd()
 
                         if (loadNewAd) {
                             preLoadNativeAd(
@@ -514,7 +518,7 @@ class AdmobNativeAd {
                             adIdReferenceName = adIdNativeReference
                         )
                         canRequestAd = true
-                        clearNativeAd(context)
+                        clearNativeAd()
                         adLayout.removeAllViews()
                         adLayout.visibility = View.GONE
                     }

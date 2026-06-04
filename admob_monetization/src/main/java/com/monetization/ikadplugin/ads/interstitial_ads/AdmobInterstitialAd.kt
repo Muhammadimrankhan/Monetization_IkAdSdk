@@ -55,10 +55,7 @@ class AdmobInterstitialAd {
             canRequestAd = true
             adLoadingDialog?.dismissAlertDialog()
             isHandlerRunningInstant = false
-            try {
-                notifyAdClosedOnce()
-            } catch (_: Exception) {
-            }
+            notifyAdClosedOnce()
         }
     }
 
@@ -73,6 +70,14 @@ class AdmobInterstitialAd {
             isHandlerRunning = false
             canRequestAd = true
             notifyAdClosedOnce()
+            activity?.let {
+                AdClickDurationTracker.adRequestDurationEnd(
+                    it,
+                    adType = AdType.INTERSTITIAL,
+                    adIdReferenceName = "Splash"
+                )
+            }
+
         }
     }
     private var adLoadingDialog: AdLoadingDialog? = null
@@ -104,6 +109,7 @@ class AdmobInterstitialAd {
         removeCallBacks()
     }
 
+    private var activity: Activity? = null
     private fun startHandler() {
         if (!isHandlerRunning) {
             isHandlerRunning = true
@@ -175,6 +181,7 @@ class AdmobInterstitialAd {
         isExitAppCall = false
         isPauseDone = false
         isHandlerRunning = false
+        activity = context
         loadAdForSplash(adId, context)
 
     }
@@ -253,7 +260,8 @@ class AdmobInterstitialAd {
                 closeHandler(1000)
             }
         } catch (e: Exception) {
-            AdClickDurationTracker.error(context,
+            AdClickDurationTracker.error(
+                context,
                 adType = "INTERSTITIAL",
                 stage = "SPLASH_LOAD",
                 placement = adIdReferenceName,
@@ -304,7 +312,8 @@ class AdmobInterstitialAd {
                 notifyAdClosedOnce()
             }
         } catch (e: Exception) {
-            AdClickDurationTracker.error(activity,
+            AdClickDurationTracker.error(
+                activity,
                 adType = "INTERSTITIAL",
                 stage = "SHOW",
                 placement = adIdReference,
@@ -394,7 +403,8 @@ class AdmobInterstitialAd {
             }
         } catch (e: Exception) {
             canRequestAd = true
-            AdClickDurationTracker.error(mContext,
+            AdClickDurationTracker.error(
+                mContext,
                 adType = "INTERSTITIAL",
                 stage = "LOAD",
                 placement = adIdReferenceName,
@@ -463,7 +473,8 @@ class AdmobInterstitialAd {
             }
         } catch (e: Exception) {
             canRequestAd = true
-            AdClickDurationTracker.error(mContext,
+            AdClickDurationTracker.error(
+                mContext,
                 adType = "INTERSTITIAL",
                 stage = "PRELOAD",
                 placement = adIdReferenceName,
