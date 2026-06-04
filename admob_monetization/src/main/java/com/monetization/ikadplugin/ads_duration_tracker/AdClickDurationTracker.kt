@@ -16,6 +16,7 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
     private const val EVENT_AD_CLICK = "ad_click"
     private const val EVENT_AD_REQUEST_FAIL = "ad_request_fail"
     private const val EVENT_AD_REQUEST_CALLING = "ad_request_calling"
+    private const val EVENT_AD_REQUEST_DURATION = "ad_request_duration_end"
     private const val EVENT_AD_REQUEST_WARN = "ad_request_warning"
     private const val EVENT_AD_REQUEST_ERROR = "ad_request_error"
     private const val EVENT_AD_REQUEST_MATCH = "ad_request_Loaded"
@@ -162,6 +163,29 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
         } else {
             firebaseAnalytics?.logEvent(
                 EVENT_AD_REQUEST_CALLING,
+                Bundle().apply {
+                    putString(PARAM_AD_TYPE, adType.firebaseName)
+                    putString(PARAM_AD_ID_REF, adIdReferenceName)
+                }
+            )
+        }
+    }
+
+   fun adRequestDurationEnd(
+        context: Context,
+        adType: AdType,
+        adIdReferenceName: String = ""
+    ) {
+
+        if (isDebug) {
+            Toast.makeText(
+                context,
+                "$EVENT_AD_REQUEST_DURATION\nAd Type: ${adType.firebaseName}\nAd Ref: $adIdReferenceName",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_REQUEST_DURATION,
                 Bundle().apply {
                     putString(PARAM_AD_TYPE, adType.firebaseName)
                     putString(PARAM_AD_ID_REF, adIdReferenceName)
