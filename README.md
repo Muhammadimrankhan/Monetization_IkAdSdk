@@ -225,6 +225,89 @@ Use default ad IDs as fallback
 Avoid showing Open Ads on critical screens (e.g., Splash, MainActivity)
 
 Keep Firebase values synced with SDK config
+
+Compose SDK
+
+The SDK now includes Compose wrappers in:
+
+com.monetization.ikadplugin.compose
+
+Add ads directly inside a Compose screen:
+
+```kotlin
+import com.monetization.ikadplugin.compose.IkComposeBannerAd
+import com.monetization.ikadplugin.compose.IkComposeCollapsibleBannerAd
+import com.monetization.ikadplugin.compose.IkComposeNativeAd
+import com.monetization.ikadplugin.compose.rememberIkComposeInterstitialAd
+import com.monetization.ikadplugin.compose.rememberIkComposeRewardedInterstitialAd
+
+@Composable
+fun HomeScreen() {
+    val interstitialAd = rememberIkComposeInterstitialAd(
+        adReference = "home_interstitial",
+        preloadOnStart = true
+    )
+
+    val rewardedInterstitialAd = rememberIkComposeRewardedInterstitialAd(
+        adReference = "rewarded_interstitial",
+        preloadOnStart = true,
+        onUserEarnedReward = { rewardType, rewardAmount ->
+            // unlock reward here
+        }
+    )
+
+    IkComposeBannerAd(
+        adReference = "home_banner",
+        enable = true,
+        loadNewAd = true
+    )
+
+    IkComposeCollapsibleBannerAd(
+        adReference = "bottom_banner",
+        enable = true,
+        loadNewAd = true
+    )
+
+    IkComposeNativeAd(
+        adIdNativeReference = "home_native",
+        enable = true,
+        adViewType = 4,
+        loadNewAd = true,
+        nativeCtaColorAdPosition = 0
+    )
+
+    Button(
+        onClick = {
+            interstitialAd.showEveryClick(
+                enable = true,
+                onAdClosed = {
+                    // continue navigation/action here
+                }
+            )
+        }
+    ) {
+        Text("Continue")
+    }
+
+    Button(
+        onClick = {
+            rewardedInterstitialAd.showEveryClick(
+                enable = true,
+                onAdClosed = {
+                    // continue after ad closes
+                },
+                onAdFailed = {
+                    // fallback flow
+                }
+            )
+        }
+    ) {
+        Text("Reward")
+    }
+}
+```
+
+For better show rate, keep `preloadOnStart = true`, call `showEveryClick()` for high-intent actions, and keep `loadNewAd = true` for inline ads. Final fill and show rate still depend on AdMob inventory, consent, network, app purchase state, and your Firebase config.
 📌 Notes
 
 Ensure AdMob_App_ID is added in App Gradle
