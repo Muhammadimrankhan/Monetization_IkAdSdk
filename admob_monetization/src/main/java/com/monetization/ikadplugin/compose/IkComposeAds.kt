@@ -130,9 +130,9 @@ fun IkComposeNativeAd(
 }
 
 @Composable
-fun rememberIkComposeInterstitialAd(
+fun rememberIkComposeInterstitialAdCounter(
     adReference: String,
-    enable: Boolean = true,
+    enable: Boolean = false,
     preloadOnStart: Boolean = false
 ): IkComposeInterstitialController {
     val activity = LocalContext.current.findActivity()
@@ -142,7 +142,34 @@ fun rememberIkComposeInterstitialAd(
 
     LaunchedEffect(activity, enable, preloadOnStart, adReference) {
         controller.updateActivity(activity)
-        controller.show()
+        controller.showInterstitialCounter(enable)
+    }
+
+    DisposableEffect(controller) {
+        onDispose {
+            controller.clear()
+        }
+    }
+
+    return controller
+
+
+}
+
+@Composable
+fun rememberIkComposeInterstitialAdShowEveryClick(
+    adReference: String,
+    enable: Boolean = false,
+    preloadOnStart: Boolean = false
+): IkComposeInterstitialController {
+    val activity = LocalContext.current.findActivity()
+    val controller = remember(adReference) {
+        IkComposeInterstitialController(adReference)
+    }
+
+    LaunchedEffect(activity, enable, preloadOnStart, adReference) {
+        controller.updateActivity(activity)
+        controller.showInterstitialAdEveryClick(enable)
     }
 
     DisposableEffect(controller) {
@@ -157,7 +184,7 @@ fun rememberIkComposeInterstitialAd(
 @Composable
 fun rememberIkComposeInterstitialAdPreLoad(
     adReference: String,
-    enable: Boolean = true,
+    enable: Boolean = false,
     preloadOnStart: Boolean = false
 ): IkComposeInterstitialController {
     val activity = LocalContext.current.findActivity()
@@ -196,8 +223,8 @@ class IkComposeInterstitialController internal constructor(
         AdmobInterstitialAd.getInstance().preLoadAd(adReference, appCompatActivity)
     }
 
-    fun show(
-        enable: Boolean = true,
+    fun showInterstitialCounter(
+        enable: Boolean = false,
         onAdClosed: () -> Unit = {},
         onAdLoaded: () -> Unit = {},
         onSplashAdViewGone: () -> Unit = {},
@@ -221,8 +248,8 @@ class IkComposeInterstitialController internal constructor(
         )
     }
 
-    fun showEveryClick(
-        enable: Boolean = true,
+    fun showInterstitialAdEveryClick(
+        enable: Boolean = false,
         onAdClosed: () -> Unit = {},
         onAdLoaded: () -> Unit = {},
         onSplashAdViewGone: () -> Unit = {},
@@ -254,10 +281,10 @@ class IkComposeInterstitialController internal constructor(
 }
 
 @Composable
-fun rememberIkComposeRewardedInterstitialAd(
+fun rememberIkComposeRewardedInterstitialAdPreLoad(
     adReference: String,
-    enable: Boolean = true,
-    preloadOnStart: Boolean = true,
+    enable: Boolean = false,
+    preloadOnStart: Boolean = false,
     onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
 ): IkComposeRewardedInterstitialController {
     val activity = LocalContext.current.findActivity()
@@ -274,6 +301,66 @@ fun rememberIkComposeRewardedInterstitialAd(
         if (preloadOnStart) {
             controller.preload(enable)
         }
+    }
+
+    DisposableEffect(controller) {
+        onDispose {
+            controller.clear()
+        }
+    }
+
+    return controller
+}
+
+
+@Composable
+fun rememberIkComposeRewardedInterstitialAdCounter(
+    adReference: String,
+    enable: Boolean = false,
+    preloadOnStart: Boolean = false,
+    onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
+): IkComposeRewardedInterstitialController {
+    val activity = LocalContext.current.findActivity()
+    val controller = remember(adReference) {
+        IkComposeRewardedInterstitialController(adReference)
+    }
+
+    SideEffect {
+        controller.updateRewardCallback(onUserEarnedReward)
+    }
+
+    LaunchedEffect(activity, enable, preloadOnStart, adReference) {
+        controller.updateActivity(activity)
+        controller.showRewardedInterstitialAdCounter(enable)
+    }
+
+    DisposableEffect(controller) {
+        onDispose {
+            controller.clear()
+        }
+    }
+
+    return controller
+}
+@Composable
+fun rememberIkComposeRewardedInterstitialAdShowEveryClick(
+    adReference: String,
+    enable: Boolean = false,
+    preloadOnStart: Boolean = false,
+    onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
+): IkComposeRewardedInterstitialController {
+    val activity = LocalContext.current.findActivity()
+    val controller = remember(adReference) {
+        IkComposeRewardedInterstitialController(adReference)
+    }
+
+    SideEffect {
+        controller.updateRewardCallback(onUserEarnedReward)
+    }
+
+    LaunchedEffect(activity, enable, preloadOnStart, adReference) {
+        controller.updateActivity(activity)
+        controller.showRewardedInterstitialAdEveryClick(enable)
     }
 
     DisposableEffect(controller) {
@@ -303,7 +390,7 @@ class IkComposeRewardedInterstitialController internal constructor(
     }
 
     fun preload(
-        enable: Boolean = true,
+        enable: Boolean = false,
         onAdFailed: () -> Unit = {},
         onAdClosed: () -> Unit = {},
         onAdLoaded: () -> Unit = {},
@@ -323,8 +410,8 @@ class IkComposeRewardedInterstitialController internal constructor(
         )
     }
 
-    fun show(
-        enable: Boolean = true,
+    fun showRewardedInterstitialAdCounter(
+        enable: Boolean = false,
         onAdClosed: () -> Unit = {},
         onAdLoaded: () -> Unit = {},
         onAdFailed: () -> Unit = {},
@@ -348,8 +435,8 @@ class IkComposeRewardedInterstitialController internal constructor(
         )
     }
 
-    fun showEveryClick(
-        enable: Boolean = true,
+    fun showRewardedInterstitialAdEveryClick(
+        enable: Boolean = false,
         onAdClosed: () -> Unit = {},
         onAdLoaded: () -> Unit = {},
         onAdFailed: () -> Unit = {},
