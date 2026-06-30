@@ -45,7 +45,7 @@ android {
     }
 }
 group = "com.github.Muhammadimrankhan"
-version = "0.1.17_meta"
+version = "0.1.18_meta"
 
 
 afterEvaluate {
@@ -55,18 +55,18 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.Muhammadimrankhan"
                 artifactId = "Monetization_IkAdSdk"
-                version = "0.1.17_meta"
+                version = "0.1.18_meta"
             }
         }
     }
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.19.0")
+    implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.google.android.material:material:1.14.0")
     implementation("com.google.android.gms:play-services-ads:25.4.0")
-    implementation("androidx.lifecycle:lifecycle-process:2.11.0")
+    implementation("androidx.lifecycle:lifecycle-process:2.10.0")
     implementation("androidx.compose.runtime:runtime:1.11.3")
     implementation("androidx.compose.ui:ui:1.11.3")
     implementation("com.android.billingclient:billing-ktx:9.1.0")
