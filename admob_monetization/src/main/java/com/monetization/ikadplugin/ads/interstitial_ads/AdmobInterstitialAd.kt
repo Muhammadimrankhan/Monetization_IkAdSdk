@@ -529,6 +529,31 @@ class AdmobInterstitialAd {
         }
     }
 
+    fun showInterstitialClickAndBack(
+        isBackPressAdShow: Boolean,
+        adIdString: String,
+        activity: Activity,
+        enable: Boolean,
+        interstitialControllerListener: InterstitialControllerListener
+    ) {
+        mInterstitialControllerListener = interstitialControllerListener
+        markTerminalPending()
+        if (!isBackPressAdShow || FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(
+                activity
+            ).canRequestAds || AdSharedPreference.getInstance(
+                activity
+            ).isAppPurchased || !enable || !InternetController.getInstance(activity).isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd
+        ) {
+            interstitialControllerListener.onAdClosed()
+        } else {
+            if (FirebaseValue.interstitialCounterStartSplash) {
+                startCounterSplashExecute(activity, adIdString)
+            } else {
+                startCounterMainExecute(activity, adIdString)
+            }
+        }
+    }
+
     fun showInterstitialEveryClick(
         adIdString: String,
         activity: Activity,
