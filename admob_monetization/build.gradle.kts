@@ -2,14 +2,14 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.library")
-    id("org.jetbrains.kotlin.android")
+//    id("org.jetbrains.kotlin.android")
     alias(libs.plugins.kotlin.compose)
     id("maven-publish")
 }
 
 android {
     namespace = "com.monetization.ikadplugin"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 24
@@ -43,9 +43,12 @@ android {
         buildConfig =true
         compose = true
     }
+    publishing {
+        singleVariant("release")
+    }
 }
 group = "com.github.Muhammadimrankhan"
-version = "0.1.17"
+version = "0.1.18"
 
 
 afterEvaluate {
@@ -55,7 +58,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.Muhammadimrankhan"
                 artifactId = "Monetization_IkAdSdk"
-                version = "0.1.17"
+                version = "0.1.18"
             }
         }
     }

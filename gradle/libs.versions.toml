@@ -1,17 +1,17 @@
 [versions]
-agp = "8.12.2"
-coreKtx = "1.18.0"
+agp = "9.2.1"
+coreKtx = "1.19.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 appcompat = "1.7.1"
-material = "1.13.0"
+material = "1.14.0"
 activity = "1.13.0"
 constraintlayout = "2.2.1"
-firebaseBom = "34.10.0"
+firebaseBom = "34.15.0"
 sdpAndroid = "1.1.1"
 sspAndroid = "1.1.1"
-billingKtx = "8.3.0"
+billingKtx = "9.1.0"
 kotlin = "2.3.10"
 
 [libraries]
@@ -39,5 +39,5 @@ firebase-perf = { module = "com.google.firebase:firebase-perf" }
 [plugins]
 
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version = "2.3.20" }
-kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version = "2.3.20" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version = "2.4.0" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version = "2.4.0" }
