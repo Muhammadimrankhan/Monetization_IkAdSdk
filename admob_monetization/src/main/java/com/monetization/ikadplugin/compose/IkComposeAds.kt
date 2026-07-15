@@ -24,77 +24,67 @@ import com.monetization.ikadplugin.ads.rewarded_interstitial.AdmobRewardedInters
 import com.monetization.ikadplugin.ads.rewarded_interstitial.RewardedInterstitialControllerListener
 
 @Composable
-fun IkComposeBannerAd(
+fun IkComposeBannerAd(activity: Activity,
     adReference: String,
     enable: Boolean,
     modifier: Modifier = Modifier,
     isRectangleBanner: Boolean = false,
     loadNewAd: Boolean = false
 ) {
-    val activity = LocalContext.current.findActivity()
 
-    AndroidView(
-        modifier = modifier,
-        factory = { context ->
-            LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            }
-        },
-        update = { adFrame ->
-            activity?.let {
-                AdmobBannerAd.getInstance().populateBannerAd(
-                    adReference = adReference,
-                    context = it,
-                    enable = enable,
-                    isRectangleBanner = isRectangleBanner,
-                    adLayout = adFrame,
-                    loadNewAd = loadNewAd
-                )
-            } ?: adFrame.removeAllViews()
+    AndroidView(modifier = modifier, factory = { context ->
+        LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            )
         }
-    )
+    }, update = { adFrame ->
+        activity.let {
+            AdmobBannerAd.getInstance().populateBannerAd(
+                adReference = adReference,
+                context = it,
+                enable = enable,
+                isRectangleBanner = isRectangleBanner,
+                adLayout = adFrame,
+                loadNewAd = loadNewAd
+            )
+        }
+    })
 }
 
 @Composable
 fun IkComposeCollapsibleBannerAd(
+    activity: Activity,
     adReference: String,
     enable: Boolean,
     modifier: Modifier = Modifier,
     loadNewAd: Boolean = false
 ) {
-    val activity = LocalContext.current.findActivity()
 
-    AndroidView(
-        modifier = modifier,
-        factory = { context ->
-            LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            }
-        },
-        update = { adFrame ->
-            activity?.let {
-                AdmobCollapsibleBannerAd.getInstance().populateAd(
-                    adReference = adReference,
-                    activity = it,
-                    enable = enable,
-                    adFrame = adFrame,
-                    loadNewAd = loadNewAd
-                )
-            } ?: adFrame.removeAllViews()
+    AndroidView(modifier = modifier, factory = { context ->
+        LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            )
         }
-    )
+    }, update = { adFrame ->
+        activity.let {
+            AdmobCollapsibleBannerAd.getInstance().populateAd(
+                adReference = adReference,
+                activity = it,
+                enable = enable,
+                adFrame = adFrame,
+                loadNewAd = loadNewAd
+            )
+        }
+    })
 }
 
 @Composable
 fun IkComposeNativeAd(
+    context: Activity,
     adIdNativeReference: String,
     enable: Boolean,
     modifier: Modifier = Modifier,
@@ -102,101 +92,66 @@ fun IkComposeNativeAd(
     loadNewAd: Boolean = false,
     nativeCtaColorAdPosition: Int = -1
 ) {
-    val context = LocalContext.current
-
-    AndroidView(
-        modifier = modifier,
-        factory = { viewContext ->
-            LinearLayout(viewContext).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            }
-        },
-        update = { adFrame ->
-            AdmobNativeAd.getInstance().populateNativeAd(
-                adViewType = adViewType,
-                adIdNativeReference = adIdNativeReference,
-                context = context,
-                enable = enable,
-                adFrame = adFrame,
-                loadNewAd = loadNewAd,
-                nativeCtaColorAdPosition = nativeCtaColorAdPosition
+    AndroidView(modifier = modifier, factory = { viewContext ->
+        LinearLayout(viewContext).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             )
         }
-    )
+    }, update = { adFrame ->
+        AdmobNativeAd.getInstance().populateNativeAd(
+            adViewType = adViewType,
+            adIdNativeReference = adIdNativeReference,
+            context = context,
+            enable = enable,
+            adFrame = adFrame,
+            loadNewAd = loadNewAd,
+            nativeCtaColorAdPosition = nativeCtaColorAdPosition
+        )
+    })
 }
+//
+//@Composable
+//fun rememberIkComposeInterstitialAdCounter(
+//    activity: Activity,
+//    adReference: String,
+//    enable: Boolean = false,
+//    preloadOnStart: Boolean = false
+//): IkComposeInterstitialController {
+//    val controller = remember(adReference) {
+//        IkComposeInterstitialController(activity, adReference)
+//    }
+//
+//    LaunchedEffect(activity, enable, preloadOnStart, adReference) {
+//        controller.updateActivity(activity)
+////        controller.showInterstitialCounter(enable)
+//    }
+//
+//    DisposableEffect(controller) {
+//        onDispose {
+//            controller.clear()
+//        }
+//    }
+//
+//    return controller
+//
+//
+//}
 
 @Composable
-fun rememberIkComposeInterstitialAdCounter(
+fun rememberIkComposeInterstitialAdAssignContext(
+    activity: Activity,
     adReference: String,
-    enable: Boolean = false,
-    preloadOnStart: Boolean = false
+    enable: Boolean = false
 ): IkComposeInterstitialController {
-    val activity = LocalContext.current.findActivity()
     val controller = remember(adReference) {
-        IkComposeInterstitialController(adReference)
+        IkComposeInterstitialController(activity, adReference)
     }
 
-    LaunchedEffect(activity, enable, preloadOnStart, adReference) {
+    LaunchedEffect(activity, enable, adReference) {
         controller.updateActivity(activity)
-        controller.showInterstitialCounter(enable)
-    }
-
-    DisposableEffect(controller) {
-        onDispose {
-            controller.clear()
-        }
-    }
-
-    return controller
-
-
-}
-
-@Composable
-fun rememberIkComposeInterstitialAdShowEveryClick(
-    adReference: String,
-    enable: Boolean = false,
-    preloadOnStart: Boolean = false
-): IkComposeInterstitialController {
-    val activity = LocalContext.current.findActivity()
-    val controller = remember(adReference) {
-        IkComposeInterstitialController(adReference)
-    }
-
-    LaunchedEffect(activity, enable, preloadOnStart, adReference) {
-        controller.updateActivity(activity)
-        controller.showInterstitialAdEveryClick(enable)
-    }
-
-    DisposableEffect(controller) {
-        onDispose {
-            controller.clear()
-        }
-    }
-
-    return controller
-}
-
-@Composable
-fun rememberIkComposeInterstitialAdPreLoad(
-    adReference: String,
-    enable: Boolean = false,
-    preloadOnStart: Boolean = false
-): IkComposeInterstitialController {
-    val activity = LocalContext.current.findActivity()
-    val controller = remember(adReference) {
-        IkComposeInterstitialController(adReference)
-    }
-
-    LaunchedEffect(activity, enable, preloadOnStart, adReference) {
-        controller.updateActivity(activity)
-        if (preloadOnStart) {
-            controller.preload(enable)
-        }
+//        controller.showInterstitialAdEveryClick(enable)
     }
 
     DisposableEffect(controller) {
@@ -207,18 +162,44 @@ fun rememberIkComposeInterstitialAdPreLoad(
 
     return controller
 }
+
+//@Composable
+//fun rememberIkComposeInterstitialAdPreLoad(
+//    context: Activity, adReference: String, enable: Boolean = false, preloadOnStart: Boolean = false
+//): IkComposeInterstitialController {
+//
+//    val controller = remember(adReference) {
+//        IkComposeInterstitialController(context, adReference)
+//    }
+//
+//    LaunchedEffect(context, enable, preloadOnStart, adReference) {
+//        controller.updateActivity(context)
+//        if (preloadOnStart) {
+//            controller.preload(enable)
+//        }
+//    }
+//
+//    DisposableEffect(controller) {
+//        onDispose {
+//            controller.clear()
+//        }
+//    }
+//
+//    return controller
+//}
 
 @Stable
 class IkComposeInterstitialController internal constructor(
-    private val adReference: String
+    private var activity: Activity?, private val adReference: String,
 ) {
-    private var activity: Activity? = null
-
     internal fun updateActivity(activity: Activity?) {
         this.activity = activity
     }
 
     fun preload(enable: Boolean = true) {
+        if (!enable) {
+            return
+        }
         val appCompatActivity = activity as? AppCompatActivity ?: return
         AdmobInterstitialAd.getInstance().preLoadAd(adReference, appCompatActivity)
     }
@@ -244,8 +225,33 @@ class IkComposeInterstitialController internal constructor(
                 override fun onAdLoaded() = onAdLoaded()
                 override fun onSplashAdViewGone() = onSplashAdViewGone()
                 override fun onIapShow() = onIapShow()
-            }
-        )
+            })
+    }
+
+    fun showInterstitialClickOrBackCounter(
+        isClickOrBackPress: Boolean,
+        enable: Boolean = false,
+        onAdClosed: () -> Unit = {},
+        onAdLoaded: () -> Unit = {},
+        onSplashAdViewGone: () -> Unit = {},
+        onIapShow: () -> Unit = {}
+    ) {
+        val currentActivity = activity ?: run {
+            onAdClosed()
+            return
+        }
+
+        AdmobInterstitialAd.getInstance().showInterstitialClickAndBack(
+            isBackPressAdShow = isClickOrBackPress,
+            adIdString = adReference,
+            activity = currentActivity,
+            enable = enable,
+            interstitialControllerListener = object : InterstitialControllerListener {
+                override fun onAdClosed() = onAdClosed()
+                override fun onAdLoaded() = onAdLoaded()
+                override fun onSplashAdViewGone() = onSplashAdViewGone()
+                override fun onIapShow() = onIapShow()
+            })
     }
 
     fun showInterstitialAdEveryClick(
@@ -255,6 +261,7 @@ class IkComposeInterstitialController internal constructor(
         onSplashAdViewGone: () -> Unit = {},
         onIapShow: () -> Unit = {}
     ) {
+
         val currentActivity = activity ?: run {
             onAdClosed()
             return
@@ -269,8 +276,7 @@ class IkComposeInterstitialController internal constructor(
                 override fun onAdLoaded() = onAdLoaded()
                 override fun onSplashAdViewGone() = onSplashAdViewGone()
                 override fun onIapShow() = onIapShow()
-            }
-        )
+            })
     }
 
     fun hasAd(): Boolean = AdmobInterstitialAd.getInstance().hasAd()
@@ -281,13 +287,12 @@ class IkComposeInterstitialController internal constructor(
 }
 
 @Composable
-fun rememberIkComposeRewardedInterstitialAdPreLoad(
+fun rememberIkComposeRewardedInterstitialAdPreLoad(activity: Activity,
     adReference: String,
     enable: Boolean = false,
     preloadOnStart: Boolean = false,
     onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
 ): IkComposeRewardedInterstitialController {
-    val activity = LocalContext.current.findActivity()
     val controller = remember(adReference) {
         IkComposeRewardedInterstitialController(adReference)
     }
@@ -314,13 +319,12 @@ fun rememberIkComposeRewardedInterstitialAdPreLoad(
 
 
 @Composable
-fun rememberIkComposeRewardedInterstitialAdCounter(
+fun rememberIkComposeRewardedInterstitialAdCounter(activity: Activity,
     adReference: String,
     enable: Boolean = false,
     preloadOnStart: Boolean = false,
     onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
 ): IkComposeRewardedInterstitialController {
-    val activity = LocalContext.current.findActivity()
     val controller = remember(adReference) {
         IkComposeRewardedInterstitialController(adReference)
     }
@@ -342,14 +346,14 @@ fun rememberIkComposeRewardedInterstitialAdCounter(
 
     return controller
 }
+
 @Composable
-fun rememberIkComposeRewardedInterstitialAdShowEveryClick(
+fun rememberIkComposeRewardedInterstitialAdShowEveryClick(activity: Activity,
     adReference: String,
     enable: Boolean = false,
     preloadOnStart: Boolean = false,
     onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
 ): IkComposeRewardedInterstitialController {
-    val activity = LocalContext.current.findActivity()
     val controller = remember(adReference) {
         IkComposeRewardedInterstitialController(adReference)
     }
@@ -484,10 +488,3 @@ class IkComposeRewardedInterstitialController internal constructor(
     }
 }
 
-private tailrec fun Context.findActivity(): Activity? {
-    return when (this) {
-        is Activity -> this
-        is ContextWrapper -> baseContext.findActivity()
-        else -> null
-    }
-}
