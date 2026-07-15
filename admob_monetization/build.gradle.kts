@@ -48,7 +48,7 @@ android {
     }
 }
 group = "com.github.Muhammadimrankhan"
-version = "0.1.18"
+version = "0.1.19"
 
 
 afterEvaluate {
@@ -58,7 +58,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.Muhammadimrankhan"
                 artifactId = "Monetization_IkAdSdk"
-                version = "0.1.18"
+                version = "0.1.19"
             }
         }
     }
@@ -70,15 +70,16 @@ dependencies {
     implementation("com.google.android.material:material:1.14.0")
     implementation("com.google.android.gms:play-services-ads:25.4.0")
     implementation("androidx.lifecycle:lifecycle-process:2.11.0")
-    implementation("androidx.compose.runtime:runtime:1.11.3")
-    implementation("androidx.compose.ui:ui:1.11.3")
+    implementation("androidx.compose.runtime:runtime:1.11.4")
+    implementation("androidx.compose.ui:ui:1.11.4")
     implementation("com.android.billingclient:billing-ktx:9.1.0")
     //Text and Size-ing Libs
     implementation("com.intuit.sdp:sdp-android:1.1.1")
     implementation("com.intuit.ssp:ssp-android:1.1.1")
+    implementation(libs.koin)
 
     // Import the BoM for the Firebase platform
-    implementation(platform("com.google.firebase:firebase-bom:34.15.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
 
     // Add the dependency for the Analytics library
     // When using the BoM, you don't specify versions in Firebase library dependencies
