@@ -397,6 +397,7 @@ class IkComposeRewardedInterstitialController internal constructor(
         enable: Boolean = false,
         onAdFailed: () -> Unit = {},
         onAdClosed: () -> Unit = {},
+        onAdRewardGranted: (isGranted: Boolean) -> Unit = {},
         onAdLoaded: () -> Unit = {},
         onIapShow: () -> Unit = {}
     ) {
@@ -407,6 +408,7 @@ class IkComposeRewardedInterstitialController internal constructor(
             mContext = appCompatActivity,
             interstitialControllerListener = rewardedListener(
                 onAdClosed = onAdClosed,
+                onAdRewardGranted = onAdRewardGranted,
                 onAdLoaded = onAdLoaded,
                 onAdFailed = onAdFailed,
                 onIapShow = onIapShow
@@ -417,6 +419,7 @@ class IkComposeRewardedInterstitialController internal constructor(
     fun showRewardedInterstitialAdCounter(
         enable: Boolean = false,
         onAdClosed: () -> Unit = {},
+        onAdRewardGranted: (isGranted: Boolean) -> Unit = {},
         onAdLoaded: () -> Unit = {},
         onAdFailed: () -> Unit = {},
         onIapShow: () -> Unit = {}
@@ -432,6 +435,7 @@ class IkComposeRewardedInterstitialController internal constructor(
             enable = enable,
             interstitialControllerListener = rewardedListener(
                 onAdClosed = onAdClosed,
+                onAdRewardGranted = onAdRewardGranted,
                 onAdLoaded = onAdLoaded,
                 onAdFailed = onAdFailed,
                 onIapShow = onIapShow
@@ -442,6 +446,7 @@ class IkComposeRewardedInterstitialController internal constructor(
     fun showRewardedInterstitialAdEveryClick(
         enable: Boolean = false,
         onAdClosed: () -> Unit = {},
+        onAdRewardGranted: (isGranted: Boolean) -> Unit = {},
         onAdLoaded: () -> Unit = {},
         onAdFailed: () -> Unit = {},
         onIapShow: () -> Unit = {}
@@ -457,6 +462,7 @@ class IkComposeRewardedInterstitialController internal constructor(
             enableAds = enable,
             interstitialControllerListener = rewardedListener(
                 onAdClosed = onAdClosed,
+                onAdRewardGranted = onAdRewardGranted,
                 onAdLoaded = onAdLoaded,
                 onAdFailed = onAdFailed,
                 onIapShow = onIapShow
@@ -468,12 +474,14 @@ class IkComposeRewardedInterstitialController internal constructor(
 
     private fun rewardedListener(
         onAdClosed: () -> Unit,
+        onAdRewardGranted: (isGranted: Boolean) -> Unit,
         onAdLoaded: () -> Unit,
         onAdFailed: () -> Unit,
         onIapShow: () -> Unit
     ): RewardedInterstitialControllerListener {
         return object : RewardedInterstitialControllerListener {
             override fun onAdClosed() = onAdClosed()
+            override fun onAdRewardGranted(boolean: Boolean) = onAdRewardGranted(false)
             override fun onAdLoaded() = onAdLoaded()
             override fun onAdFailed() = onAdFailed()
             override fun onIapShow() = onIapShow()
