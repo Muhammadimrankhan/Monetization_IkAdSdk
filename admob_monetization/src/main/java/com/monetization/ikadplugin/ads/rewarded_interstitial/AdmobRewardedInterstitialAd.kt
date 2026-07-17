@@ -15,7 +15,6 @@ import com.monetization.ikadplugin.ads.AdKeys
 import com.monetization.ikadplugin.ads.AdKeys.iapScreenShow
 import com.monetization.ikadplugin.ads.AdLoadingDialog
 import com.monetization.ikadplugin.ads.FirebaseValue
-import com.monetization.ikadplugin.ads.interstitial_ads.InterstitialControllerListener
 import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
 import com.monetization.ikadplugin.ads_duration_tracker.AdType
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
@@ -87,16 +86,18 @@ class AdmobRewardedInterstitialAd {
         try {
             if (admobInterAd != null && !AdKeys.IS_APP_PAUSE && !AdKeys.isShowingOpenAd) {
                 admobInterAd?.show(activity) { rewardItem ->
+                    isRewardComplete = true
                     // Handle the reward.
-                    
+
                     val rewardAmount = rewardItem.amount
                     val rewardType = rewardItem.type
                     mInterstitialControllerListener?.onUserEarnedReward(rewardType, rewardAmount)
-                    AdClickDurationTracker.userEarnedRewardedValue(activity,
-                        rewardType,rewardAmount
+                    AdClickDurationTracker.userEarnedRewardedValue(
+                        activity, rewardType, rewardAmount
                     )
                 }
-                AdClickDurationTracker.adShow(activity,
+                AdClickDurationTracker.adShow(
+                    activity,
                     adType = AdType.REWARDED_INTERSTITIAL,
                     adIdReferenceName = adIdReference
                 )
@@ -104,7 +105,8 @@ class AdmobRewardedInterstitialAd {
                 notifyAdClosedOnce()
             }
         } catch (e: Exception) {
-            AdClickDurationTracker.error(activity,
+            AdClickDurationTracker.error(
+                activity,
                 adType = "REWARDED_INTERSTITIAL",
                 stage = "SHOW",
                 placement = adIdReference,
@@ -135,7 +137,8 @@ class AdmobRewardedInterstitialAd {
                 canRequestAd = false
                 adIdReference = adIdReferenceName
 
-                AdClickDurationTracker.adRequestCalling(mContext,
+                AdClickDurationTracker.adRequestCalling(
+                    mContext,
                     adType = AdType.REWARDED_INTERSTITIAL,
                     adIdReferenceName = adIdReferenceName
                 )
@@ -160,7 +163,8 @@ class AdmobRewardedInterstitialAd {
                                 removeCallBacksInstant()
                                 setAdmobFullScreen(activity = mContext, "")
                             }
-                            AdClickDurationTracker.adRequestMatch(mContext,
+                            AdClickDurationTracker.adRequestMatch(
+                                mContext,
                                 adType = AdType.REWARDED_INTERSTITIAL,
                                 adIdReferenceName = adIdReferenceName
                             )
@@ -176,7 +180,8 @@ class AdmobRewardedInterstitialAd {
                             }
                             canDispatchTerminalCallback = false
                             mInterstitialControllerListener?.onAdFailed()
-                            AdClickDurationTracker.adRequestFail(mContext,
+                            AdClickDurationTracker.adRequestFail(
+                                mContext,
                                 adType = AdType.REWARDED_INTERSTITIAL,
                                 adIdReferenceName = adIdReferenceName
                             )
@@ -192,7 +197,8 @@ class AdmobRewardedInterstitialAd {
             }
         } catch (e: Exception) {
             canRequestAd = true
-            AdClickDurationTracker.error(mContext,
+            AdClickDurationTracker.error(
+                mContext,
                 adType = "REWARDED_INTERSTITIAL",
                 stage = "LOAD",
                 placement = adIdReferenceName,
@@ -205,7 +211,8 @@ class AdmobRewardedInterstitialAd {
 
 
     fun preLoadAd(
-        adIdReferenceName: String, mContext: AppCompatActivity,
+        adIdReferenceName: String,
+        mContext: AppCompatActivity,
         interstitialControllerListener: RewardedInterstitialControllerListener
     ) {
         try {
@@ -222,7 +229,8 @@ class AdmobRewardedInterstitialAd {
                 canRequestAd = false
                 adIdReference = adIdReferenceName
 
-                AdClickDurationTracker.adRequestCalling(mContext,
+                AdClickDurationTracker.adRequestCalling(
+                    mContext,
                     adType = AdType.REWARDED_INTERSTITIAL,
                     adIdReferenceName = adIdReferenceName
                 )
@@ -238,7 +246,8 @@ class AdmobRewardedInterstitialAd {
                             canRequestAd = true
                             admobInterAd = p0
 
-                            AdClickDurationTracker.adRequestMatch(mContext,
+                            AdClickDurationTracker.adRequestMatch(
+                                mContext,
                                 adType = AdType.REWARDED_INTERSTITIAL,
                                 adIdReferenceName = adIdReferenceName
                             )
@@ -246,7 +255,8 @@ class AdmobRewardedInterstitialAd {
 
                         override fun onAdFailedToLoad(p0: LoadAdError) {
                             super.onAdFailedToLoad(p0)
-                            AdClickDurationTracker.adRequestFail(mContext,
+                            AdClickDurationTracker.adRequestFail(
+                                mContext,
                                 adType = AdType.REWARDED_INTERSTITIAL,
                                 adIdReferenceName = adIdReferenceName
                             )
@@ -261,7 +271,8 @@ class AdmobRewardedInterstitialAd {
             }
         } catch (e: Exception) {
             canRequestAd = true
-            AdClickDurationTracker.error(mContext,
+            AdClickDurationTracker.error(
+                mContext,
                 adType = "REWARDED_INTERSTITIAL",
                 stage = "PRELOAD",
                 placement = adIdReferenceName,
@@ -443,16 +454,19 @@ class AdmobRewardedInterstitialAd {
         adLoadingDialog?.showAlertDialog()
     }
 
+    var isRewardComplete = false
+
     private fun setAdmobFullScreen(
         activity: Activity, adIdString: String
     ) {
         android15Support()
         adLoadingDialog?.dismissAlertDialog()
-
+        isRewardComplete = false
         admobInterAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdClicked() {
                 super.onAdClicked()
-                AdClickDurationTracker.startTracking(activity,
+                AdClickDurationTracker.startTracking(
+                    activity,
                     adType = AdType.REWARDED_INTERSTITIAL,
                     adIdReferenceName = adIdReference
                 )
@@ -463,6 +477,7 @@ class AdmobRewardedInterstitialAd {
                 FirebaseValue.IS_INTER_SHOWING = false
                 admobInterAd = null
                 adLoadingDialog?.dismissAlertDialog()
+                mInterstitialControllerListener?.onAdRewardGranted(isRewardComplete)
                 notifyAdClosedOnce()
                 if (iapScreenShow) {
                     iapScreenShow = false
@@ -482,7 +497,8 @@ class AdmobRewardedInterstitialAd {
 
             override fun onAdFailedToShowFullScreenContent(p0: AdError) {
                 super.onAdFailedToShowFullScreenContent(p0)
-                AdClickDurationTracker.adRequestFail(activity,
+                AdClickDurationTracker.adRequestFail(
+                    activity,
                     adType = AdType.REWARDED_INTERSTITIAL,
                     adIdReferenceName = adIdReference
                 )
