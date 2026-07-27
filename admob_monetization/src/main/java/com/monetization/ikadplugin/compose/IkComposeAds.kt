@@ -25,11 +25,11 @@ import com.monetization.ikadplugin.ads.rewarded_interstitial.RewardedInterstitia
 
 @Composable
 fun IkComposeBannerAd(activity: Activity,
-    adReference: String,
-    enable: Boolean,
-    modifier: Modifier = Modifier,
-    isRectangleBanner: Boolean = false,
-    loadNewAd: Boolean = false
+                      adReference: String,
+                      enable: Boolean,
+                      modifier: Modifier = Modifier,
+                      isRectangleBanner: Boolean = false,
+                      loadNewAd: Boolean = false
 ) {
 
     AndroidView(modifier = modifier, factory = { context ->
@@ -288,10 +288,10 @@ class IkComposeInterstitialController internal constructor(
 
 @Composable
 fun rememberIkComposeRewardedInterstitialAdPreLoad(activity: Activity,
-    adReference: String,
-    enable: Boolean = false,
-    preloadOnStart: Boolean = false,
-    onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
+                                                   adReference: String,
+                                                   enable: Boolean = false,
+                                                   preloadOnStart: Boolean = false,
+                                                   onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
 ): IkComposeRewardedInterstitialController {
     val controller = remember(adReference) {
         IkComposeRewardedInterstitialController(adReference)
@@ -320,10 +320,10 @@ fun rememberIkComposeRewardedInterstitialAdPreLoad(activity: Activity,
 
 @Composable
 fun rememberIkComposeRewardedInterstitialAdCounter(activity: Activity,
-    adReference: String,
-    enable: Boolean = false,
-    preloadOnStart: Boolean = false,
-    onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
+                                                   adReference: String,
+                                                   enable: Boolean = false,
+                                                   preloadOnStart: Boolean = false,
+                                                   onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
 ): IkComposeRewardedInterstitialController {
     val controller = remember(adReference) {
         IkComposeRewardedInterstitialController(adReference)
@@ -349,10 +349,10 @@ fun rememberIkComposeRewardedInterstitialAdCounter(activity: Activity,
 
 @Composable
 fun rememberIkComposeRewardedInterstitialAdShowEveryClick(activity: Activity,
-    adReference: String,
-    enable: Boolean = false,
-    preloadOnStart: Boolean = false,
-    onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
+                                                          adReference: String,
+                                                          enable: Boolean = false,
+                                                          preloadOnStart: Boolean = false,
+                                                          onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
 ): IkComposeRewardedInterstitialController {
     val controller = remember(adReference) {
         IkComposeRewardedInterstitialController(adReference)
@@ -397,6 +397,7 @@ class IkComposeRewardedInterstitialController internal constructor(
         enable: Boolean = false,
         onAdFailed: () -> Unit = {},
         onAdClosed: () -> Unit = {},
+        onAdRewardGranted: (isGranted: Boolean) -> Unit = {},
         onAdLoaded: () -> Unit = {},
         onIapShow: () -> Unit = {}
     ) {
@@ -407,6 +408,7 @@ class IkComposeRewardedInterstitialController internal constructor(
             mContext = appCompatActivity,
             interstitialControllerListener = rewardedListener(
                 onAdClosed = onAdClosed,
+                onAdRewardGranted = onAdRewardGranted,
                 onAdLoaded = onAdLoaded,
                 onAdFailed = onAdFailed,
                 onIapShow = onIapShow
@@ -417,6 +419,7 @@ class IkComposeRewardedInterstitialController internal constructor(
     fun showRewardedInterstitialAdCounter(
         enable: Boolean = false,
         onAdClosed: () -> Unit = {},
+        onAdRewardGranted: (isGranted: Boolean) -> Unit = {},
         onAdLoaded: () -> Unit = {},
         onAdFailed: () -> Unit = {},
         onIapShow: () -> Unit = {}
@@ -432,6 +435,7 @@ class IkComposeRewardedInterstitialController internal constructor(
             enable = enable,
             interstitialControllerListener = rewardedListener(
                 onAdClosed = onAdClosed,
+                onAdRewardGranted = onAdRewardGranted,
                 onAdLoaded = onAdLoaded,
                 onAdFailed = onAdFailed,
                 onIapShow = onIapShow
@@ -442,6 +446,7 @@ class IkComposeRewardedInterstitialController internal constructor(
     fun showRewardedInterstitialAdEveryClick(
         enable: Boolean = false,
         onAdClosed: () -> Unit = {},
+        onAdRewardGranted: (isGranted: Boolean) -> Unit = {},
         onAdLoaded: () -> Unit = {},
         onAdFailed: () -> Unit = {},
         onIapShow: () -> Unit = {}
@@ -457,6 +462,7 @@ class IkComposeRewardedInterstitialController internal constructor(
             enableAds = enable,
             interstitialControllerListener = rewardedListener(
                 onAdClosed = onAdClosed,
+                onAdRewardGranted = onAdRewardGranted,
                 onAdLoaded = onAdLoaded,
                 onAdFailed = onAdFailed,
                 onIapShow = onIapShow
@@ -468,12 +474,14 @@ class IkComposeRewardedInterstitialController internal constructor(
 
     private fun rewardedListener(
         onAdClosed: () -> Unit,
+        onAdRewardGranted: (isGranted: Boolean) -> Unit,
         onAdLoaded: () -> Unit,
         onAdFailed: () -> Unit,
         onIapShow: () -> Unit
     ): RewardedInterstitialControllerListener {
         return object : RewardedInterstitialControllerListener {
             override fun onAdClosed() = onAdClosed()
+            override fun onAdRewardGranted(boolean: Boolean) = onAdRewardGranted(false)
             override fun onAdLoaded() = onAdLoaded()
             override fun onAdFailed() = onAdFailed()
             override fun onIapShow() = onIapShow()

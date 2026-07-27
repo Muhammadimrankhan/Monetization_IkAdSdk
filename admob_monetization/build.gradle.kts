@@ -26,9 +26,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-
         }
-
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -48,7 +46,7 @@ android {
     }
 }
 group = "com.github.Muhammadimrankhan"
-version = "0.1.21"
+version = "0.1.24"
 
 
 afterEvaluate {
@@ -58,7 +56,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.Muhammadimrankhan"
                 artifactId = "Monetization_IkAdSdk"
-                version = "0.1.21"
+                version = "0.1.24"
             }
         }
     }
@@ -76,7 +74,8 @@ dependencies {
     //Text and Size-ing Libs
     implementation("com.intuit.sdp:sdp-android:1.1.1")
     implementation("com.intuit.ssp:ssp-android:1.1.1")
-    implementation(libs.koin)
+//    implementation(libs.koin)
+    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
 
     // Import the BoM for the Firebase platform
     implementation(platform("com.google.firebase:firebase-bom:34.16.0"))

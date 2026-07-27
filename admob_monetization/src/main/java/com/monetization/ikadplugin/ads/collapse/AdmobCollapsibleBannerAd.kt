@@ -25,7 +25,6 @@ import com.monetization.ikadplugin.BuildConfig
 import com.monetization.ikadplugin.ads.NativeShimmerEffect.addShimmerLayout
 import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
 import com.monetization.ikadplugin.ads_duration_tracker.AdType
-import com.monetization.ikadplugin.subscription.SubscriptionConstant.isDebug
 
 class AdmobCollapsibleBannerAd {
 
