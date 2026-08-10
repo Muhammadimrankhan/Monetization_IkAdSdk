@@ -46,7 +46,7 @@ android {
     }
 }
 group = "com.github.Muhammadimrankhan"
-version = "0.1.24"
+version = "0.1.25"
 
 
 afterEvaluate {
@@ -56,7 +56,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.Muhammadimrankhan"
                 artifactId = "Monetization_IkAdSdk"
-                version = "0.1.24"
+                version = "0.1.25"
             }
         }
     }
@@ -78,7 +78,7 @@ dependencies {
     implementation("com.google.android.ump:user-messaging-platform:4.0.0")
 
     // Import the BoM for the Firebase platform
-    implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.17.0"))
 
     // Add the dependency for the Analytics library
     // When using the BoM, you don't specify versions in Firebase library dependencies
