@@ -254,6 +254,31 @@ class IkComposeInterstitialController internal constructor(
             })
     }
 
+
+    fun showInterstitialPreLoad(
+        enable: Boolean = false,
+        onAdClosed: () -> Unit = {},
+        onAdLoaded: () -> Unit = {},
+        onSplashAdViewGone: () -> Unit = {},
+        onIapShow: () -> Unit = {}
+    ) {
+        val currentActivity = activity ?: run {
+            onAdClosed()
+            return
+        }
+
+        AdmobInterstitialAd.getInstance().showInterstitialPreLoad(
+            adIdString = adReference,
+            activity = currentActivity,
+            enable = enable,
+            interstitialControllerListener = object : InterstitialControllerListener {
+                override fun onAdClosed() = onAdClosed()
+                override fun onAdLoaded() = onAdLoaded()
+                override fun onSplashAdViewGone() = onSplashAdViewGone()
+                override fun onIapShow() = onIapShow()
+            })
+    }
+
     fun showInterstitialAdEveryClick(
         enable: Boolean = false,
         onAdClosed: () -> Unit = {},
