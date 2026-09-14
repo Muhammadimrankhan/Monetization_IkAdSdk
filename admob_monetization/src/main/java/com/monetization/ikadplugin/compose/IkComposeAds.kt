@@ -25,11 +25,11 @@ import com.monetization.ikadplugin.ads.rewarded_interstitial.RewardedInterstitia
 
 @Composable
 fun IkComposeBannerAd(activity: Activity,
-    adReference: String,
-    enable: Boolean,
-    modifier: Modifier = Modifier,
-    isRectangleBanner: Boolean = false,
-    loadNewAd: Boolean = false
+                      adReference: String,
+                      enable: Boolean,
+                      modifier: Modifier = Modifier,
+                      isRectangleBanner: Boolean = false,
+                      loadNewAd: Boolean = false
 ) {
 
     AndroidView(modifier = modifier, factory = { context ->
@@ -254,6 +254,31 @@ class IkComposeInterstitialController internal constructor(
             })
     }
 
+
+    fun showInterstitialPreLoad(
+        enable: Boolean = false,
+        onAdClosed: () -> Unit = {},
+        onAdLoaded: () -> Unit = {},
+        onSplashAdViewGone: () -> Unit = {},
+        onIapShow: () -> Unit = {}
+    ) {
+        val currentActivity = activity ?: run {
+            onAdClosed()
+            return
+        }
+
+        AdmobInterstitialAd.getInstance().showInterstitialPreLoad(
+            adIdString = adReference,
+            activity = currentActivity,
+            enable = enable,
+            interstitialControllerListener = object : InterstitialControllerListener {
+                override fun onAdClosed() = onAdClosed()
+                override fun onAdLoaded() = onAdLoaded()
+                override fun onSplashAdViewGone() = onSplashAdViewGone()
+                override fun onIapShow() = onIapShow()
+            })
+    }
+
     fun showInterstitialAdEveryClick(
         enable: Boolean = false,
         onAdClosed: () -> Unit = {},
@@ -288,10 +313,10 @@ class IkComposeInterstitialController internal constructor(
 
 @Composable
 fun rememberIkComposeRewardedInterstitialAdPreLoad(activity: Activity,
-    adReference: String,
-    enable: Boolean = false,
-    preloadOnStart: Boolean = false,
-    onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
+                                                   adReference: String,
+                                                   enable: Boolean = false,
+                                                   preloadOnStart: Boolean = false,
+                                                   onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
 ): IkComposeRewardedInterstitialController {
     val controller = remember(adReference) {
         IkComposeRewardedInterstitialController(adReference)
@@ -320,10 +345,10 @@ fun rememberIkComposeRewardedInterstitialAdPreLoad(activity: Activity,
 
 @Composable
 fun rememberIkComposeRewardedInterstitialAdCounter(activity: Activity,
-    adReference: String,
-    enable: Boolean = false,
-    preloadOnStart: Boolean = false,
-    onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
+                                                   adReference: String,
+                                                   enable: Boolean = false,
+                                                   preloadOnStart: Boolean = false,
+                                                   onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
 ): IkComposeRewardedInterstitialController {
     val controller = remember(adReference) {
         IkComposeRewardedInterstitialController(adReference)
@@ -349,10 +374,10 @@ fun rememberIkComposeRewardedInterstitialAdCounter(activity: Activity,
 
 @Composable
 fun rememberIkComposeRewardedInterstitialAdShowEveryClick(activity: Activity,
-    adReference: String,
-    enable: Boolean = false,
-    preloadOnStart: Boolean = false,
-    onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
+                                                          adReference: String,
+                                                          enable: Boolean = false,
+                                                          preloadOnStart: Boolean = false,
+                                                          onUserEarnedReward: (rewardType: String, rewardAmount: Int) -> Unit = { _, _ -> }
 ): IkComposeRewardedInterstitialController {
     val controller = remember(adReference) {
         IkComposeRewardedInterstitialController(adReference)
