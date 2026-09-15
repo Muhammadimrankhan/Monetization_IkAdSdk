@@ -19,6 +19,7 @@ object FirebaseValue {
     var nativeAdsBgColorChange = false
     var SPLASH_INTERSTITIAL_CALL_ENABLE = false
     var PROGRESS_LOADING_OPEN_AP_ENABLE = true
+    var OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE = false
     var nativeButtonRectangle = false
     var colorNativeCTR1 = "#E74625"
     var colorNativeCTR2 = "#E74625"

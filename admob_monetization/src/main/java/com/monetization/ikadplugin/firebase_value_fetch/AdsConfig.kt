@@ -24,5 +24,6 @@ data class AdsConfig(
     val rewardedInterstitialPreloadProgressEnable: Boolean = false,
     val everyNativeCtaColorChangeEnable: Boolean = false,
     val everyNativeCtaColor: List<GradientColors> = emptyList(),
-    val darkTheme: Boolean = false
+    val darkTheme: Boolean = false,
+    val openAdBeforeActivityShowEnable: Boolean = false
 )
