@@ -15,4 +15,16 @@ interface OpenAdControllerListener {
      */
     fun beforeOpenAdActivityShow(isActivityShow: Boolean)
 
+    /**
+     * Called from [AdmobOpenAppAd] when the app open ad has been dismissed
+     * (AdMob onAdDismissedFullScreenContent).
+     *
+     * Also fires when the ad fails to show (AdMob onAdFailedToShowFullScreenContent),
+     * so every [beforeOpenAdActivityShow] is always followed by this callback.
+     *
+     * Use it to continue the flow of the activity shown by [beforeOpenAdActivityShow]
+     * once the ad is gone.
+     */
+    fun dismissOpenAdCalling()
+
 }
