@@ -1,0 +1,28 @@
+Index: admob_monetization/build.gradle.kts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import org.jetbrains.kotlin.gradle.dsl.JvmTarget\r\n\r\nplugins {\r\n    id(\"com.android.library\")\r\n//    id(\"org.jetbrains.kotlin.android\")\r\n    alias(libs.plugins.kotlin.compose)\r\n    id(\"maven-publish\")\r\n}\r\n\r\nandroid {\r\n    namespace = \"com.monetization.ikadplugin\"\r\n    compileSdk = 37\r\n\r\n    defaultConfig {\r\n        minSdk = 24\r\n\r\n        testInstrumentationRunner = \"androidx.test.runner.AndroidJUnitRunner\"\r\n        consumerProguardFiles(\"consumer-rules.pro\")\r\n\r\n    }\r\n\r\n    buildTypes {\r\n        release {\r\n            isMinifyEnabled = false\r\n            proguardFiles(\r\n                getDefaultProguardFile(\"proguard-android-optimize.txt\"),\r\n                \"proguard-rules.pro\"\r\n            )\r\n        }\r\n    }\r\n    compileOptions {\r\n        sourceCompatibility = JavaVersion.VERSION_11\r\n        targetCompatibility = JavaVersion.VERSION_11\r\n    }\r\n    kotlin {\r\n        compilerOptions {\r\n            jvmTarget.set(JvmTarget.JVM_11)\r\n        }\r\n    }\r\n    buildFeatures {\r\n        buildConfig =true\r\n        compose = true\r\n    }\r\n    publishing {\r\n        singleVariant(\"release\")\r\n    }\r\n}\r\ngroup = \"com.github.Muhammadimrankhan\"\r\nversion = \"0.1.27_meta\"\r\n\r\n\r\nafterEvaluate {\r\n    publishing {\r\n        publications {\r\n            create<MavenPublication>(\"release\") {\r\n                from(components[\"release\"])\r\n                groupId = \"com.github.Muhammadimrankhan\"\r\n                artifactId = \"Monetization_IkAdSdk\"\r\n                version = \"0.1.27_meta\"\r\n            }\r\n        }\r\n    }\r\n}\r\n\r\ndependencies {\r\n    implementation(\"androidx.core:core-ktx:1.19.0\")\r\n    implementation(\"androidx.appcompat:appcompat:1.7.1\")\r\n    implementation(\"com.google.android.material:material:1.14.0\")\r\n    implementation(\"com.google.android.gms:play-services-ads:25.4.0\")\r\n    implementation(\"androidx.lifecycle:lifecycle-process:2.11.0\")\r\n    implementation(\"androidx.compose.runtime:runtime:1.12.1\")\r\n    implementation(\"androidx.compose.ui:ui:1.12.1\")\r\n    implementation(\"com.android.billingclient:billing-ktx:9.1.0\")\r\n    //Text and Size-ing Libs\r\n    implementation(\"com.intuit.sdp:sdp-android:1.1.1\")\r\n    implementation(\"com.intuit.ssp:ssp-android:1.1.1\")\r\n//    implementation(libs.koin)\r\n    implementation(\"com.google.android.ump:user-messaging-platform:4.0.0\")\r\n\r\n    // Import the BoM for the Firebase platform\r\n    implementation(platform(\"com.google.firebase:firebase-bom:34.19.0\"))\r\n\r\n    // Add the dependency for the Analytics library\r\n    // When using the BoM, you don't specify versions in Firebase library dependencies\r\n    implementation(\"com.google.firebase:firebase-analytics\")\r\n    implementation(\"com.google.ads.mediation:facebook:6.22.0.1\")\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/admob_monetization/build.gradle.kts b/admob_monetization/build.gradle.kts
+--- a/admob_monetization/build.gradle.kts	(revision 104df8ce0759491fef967dc2ced1be666da80c93)
++++ b/admob_monetization/build.gradle.kts	(date 1789457180748)
+@@ -46,7 +46,7 @@
+     }
+ }
+ group = "com.github.Muhammadimrankhan"
+-version = "0.1.27_meta"
++version = "0.1.28_meta"
+ 
+ 
+ afterEvaluate {
+@@ -56,7 +56,7 @@
+                 from(components["release"])
+                 groupId = "com.github.Muhammadimrankhan"
+                 artifactId = "Monetization_IkAdSdk"
+-                version = "0.1.27_meta"
++                version = "0.1.28_meta"
+             }
+         }
+     }
