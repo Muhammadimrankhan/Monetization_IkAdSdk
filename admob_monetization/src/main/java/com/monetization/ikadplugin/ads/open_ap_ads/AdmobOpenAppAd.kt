@@ -167,34 +167,25 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
         }
         canRequestAd = false
         AdClickDurationTracker.adRequestCalling(
-            ctx,
-            adType = AdType.APP_OPEN,
-            adIdReferenceName = adRef
+            ctx, adType = AdType.APP_OPEN, adIdReferenceName = adRef
         )
         val adId = FetchConfig.getOpenAppAdId(adRef)
         AppOpenAd.load(
-            ctx,
-            adId,
-            AdRequest.Builder().build(),
-            object : AppOpenAd.AppOpenAdLoadCallback() {
+            ctx, adId, AdRequest.Builder().build(), object : AppOpenAd.AppOpenAdLoadCallback() {
                 override fun onAdLoaded(appOpenAd: AppOpenAd) {
                     super.onAdLoaded(appOpenAd)
                     canRequestAd = true
                     mAppOpenAd = appOpenAd
                     loadTime = Date().time
                     AdClickDurationTracker.adRequestMatch(
-                        ctx,
-                        adType = AdType.APP_OPEN,
-                        adIdReferenceName = adRef
+                        ctx, adType = AdType.APP_OPEN, adIdReferenceName = adRef
                     )
                 }
 
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                     super.onAdFailedToLoad(loadAdError)
                     AdClickDurationTracker.adRequestFail(
-                        ctx,
-                        adType = AdType.APP_OPEN,
-                        adIdReferenceName = adRef
+                        ctx, adType = AdType.APP_OPEN, adIdReferenceName = adRef
                     )
                     canRequestAd = true
                     mAppOpenAd = null
@@ -263,6 +254,9 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     }
 
     private fun checkOpenAdProgressAndShowAd(mContext: Activity, callback: () -> Unit) {
+        mAppOpenAd?.let {
+            notifyBeforeOpenAdActivityShow(mContext)
+        }
         if (FirebaseValue.PROGRESS_LOADING_OPEN_AP_ENABLE) {
             try {
                 hideShowProgress(mContext)
@@ -295,9 +289,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                     super.onAdClicked()
 
                     AdClickDurationTracker.startTracking(
-                        mContext,
-                        adType = AdType.APP_OPEN,
-                        adIdReferenceName = adRef
+                        mContext, adType = AdType.APP_OPEN, adIdReferenceName = adRef
                     )
                 }
 
@@ -306,32 +298,32 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                     mAppOpenAd = null
                     AdKeys.isShowingOpenAd = false
                     hideProgress()
+                    notifyDismissOpenAdCalling(mContext)
                     callback.invoke()
                 }
 
                 override fun onAdShowedFullScreenContent() {
                     super.onAdShowedFullScreenContent()
                     AdKeys.isShowingOpenAd = true
-                    notifyBeforeOpenAdActivityShow(mContext)
+                    if (!FirebaseValue.OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE) {
+                        setBlackColor()
+                    }
                 }
 
                 override fun onAdFailedToShowFullScreenContent(p0: AdError) {
                     super.onAdFailedToShowFullScreenContent(p0)
                     AdClickDurationTracker.adRequestFail(
-                        mContext,
-                        adType = AdType.APP_OPEN,
-                        adIdReferenceName = adRef
+                        mContext, adType = AdType.APP_OPEN, adIdReferenceName = adRef
                     )
                     hideProgress()
                     mAppOpenAd = null
+                    notifyDismissOpenAdCalling(mContext)
                     callback.invoke()
                     AdKeys.isShowingOpenAd = false
                 }
             }
             AdClickDurationTracker.adShow(
-                mContext,
-                adType = AdType.APP_OPEN,
-                adIdReferenceName = adRef
+                mContext, adType = AdType.APP_OPEN, adIdReferenceName = adRef
             )
             it.show(mContext)
         }
@@ -339,7 +331,6 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
 
     private fun notifyBeforeOpenAdActivityShow(mContext: Activity) {
         if (!FirebaseValue.OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE) {
-            setBlackColor()
             return
         }
         val listener = openAdControllerListener ?: return
@@ -353,6 +344,25 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                 placement = adRef,
                 throwable = e,
                 message = "Failed to deliver beforeOpenAdActivityShow callback."
+            )
+        }
+    }
+
+    private fun notifyDismissOpenAdCalling(mContext: Activity) {
+        if (!FirebaseValue.OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE) {
+            return
+        }
+        val listener = openAdControllerListener ?: return
+        try {
+            listener.dismissOpenAdCalling()
+        } catch (e: Exception) {
+            AdClickDurationTracker.error(
+                mContext,
+                adType = "APP_OPEN",
+                stage = "DISMISS_OPEN_AD",
+                placement = adRef,
+                throwable = e,
+                message = "Failed to deliver dismissOpenAdCalling callback."
             )
         }
     }
