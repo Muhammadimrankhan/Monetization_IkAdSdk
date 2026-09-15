@@ -575,6 +575,12 @@ class AdmobInterstitialAd {
         FirebaseValue.allAppInterstitialAdCount = 0
     }
 
+    fun counterUpdateInterstitialCounter(counterEnable: Boolean) {
+        if(counterEnable){
+            FirebaseValue.allAppInterstitialAdCount++
+        }
+    }
+
     fun showInterstitial(
         adIdString: String,
         activity: Activity,

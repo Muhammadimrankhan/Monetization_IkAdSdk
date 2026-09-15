@@ -46,7 +46,7 @@ android {
     }
 }
 group = "com.github.Muhammadimrankhan"
-version = "0.1.28"
+version = "0.1.30"
 
 
 afterEvaluate {
@@ -56,7 +56,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.Muhammadimrankhan"
                 artifactId = "Monetization_IkAdSdk"
-                version = "0.1.28"
+                version = "0.1.30"
             }
         }
     }
