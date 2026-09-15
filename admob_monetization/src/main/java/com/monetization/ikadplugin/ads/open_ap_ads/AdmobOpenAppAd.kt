@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -30,6 +31,10 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
 
     companion object {
 
+        private const val BEFORE_ACTIVITY_SHOW_DELAY = 1500L
+        private const val PROGRESS_LOADING_DELAY = 1000L
+        private const val ON_START_SHOW_DELAY = 300L
+
         @Volatile
         private var instance: AdmobOpenAppAd? = null
 
@@ -51,6 +56,9 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     private var appContext: Context? = null
     private var isObserverRegistered = false
     private var openAdControllerListener: OpenAdControllerListener? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var isOpenAdShowPending = false
+    private var isBeforeActivityShowNotified = false
 
 
     fun initOpenAd(
@@ -105,6 +113,9 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                 message = "Failed to unregister process lifecycle observer."
             )
         }
+        mainHandler.removeCallbacksAndMessages(null)
+        isOpenAdShowPending = false
+        isBeforeActivityShowNotified = false
         hideProgress()
         mAppOpenAd = null
         appContext = null
@@ -124,7 +135,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                     ctx
                 ).isAppPurchased && openAdEnable
             ) {
-                Handler(Looper.getMainLooper()).postDelayed({
+                mainHandler.postDelayed({
                     if (getCurrentActivity() != null) {
                         showOpenAd()
                     } else {
@@ -137,7 +148,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                             message = "Current activity is null; skipping open ad display."
                         )
                     }
-                }, 300)
+                }, ON_START_SHOW_DELAY)
             } else {
                 AdKeys.isPermissionCheck = false
             }
@@ -240,7 +251,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     }
 
     private fun showOpenAd() {
-        if (!AdKeys.isShowingOpenAd && isAdAvailable) {
+        if (!AdKeys.isShowingOpenAd && !isOpenAdShowPending && isAdAvailable) {
             if (!AdKeys.IS_APP_PAUSE && !FirebaseValue.IS_INTER_SHOWING) {
                 getCurrentActivity()?.let { mContext ->
                     checkOpenAdProgressAndShowAd(mContext) {
@@ -254,27 +265,30 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     }
 
     private fun checkOpenAdProgressAndShowAd(mContext: Activity, callback: () -> Unit) {
-        if (FirebaseValue.OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE) {
-            mAppOpenAd?.let {
-                notifyBeforeOpenAdActivityShow(mContext)
-            }
-            Handler(Looper.getMainLooper()).postDelayed({
-                launchOpenAd(mContext, callback)
-            }, 1500)
-
+        if (mAppOpenAd == null) {
+            callback.invoke()
+            return
+        }
+        isOpenAdShowPending = true
+        if (FirebaseValue.OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE && openAdControllerListener != null) {
+            // The activity the host starts is the loading screen in this flow,
+            // so the open-ad progress dialog is skipped on purpose.
+            notifyBeforeOpenAdActivityShow(mContext)
+            mainHandler.postDelayed({
+                nowShowAd(callback)
+            }, BEFORE_ACTIVITY_SHOW_DELAY)
         } else {
             launchOpenAd(mContext, callback)
         }
-
     }
 
     private fun launchOpenAd(mContext: Activity, callback: () -> Unit) {
         if (FirebaseValue.PROGRESS_LOADING_OPEN_AP_ENABLE) {
             try {
                 hideShowProgress(mContext)
-                Handler(Looper.getMainLooper()).postDelayed({
-                    nowShowAd(mContext, callback)
-                }, 1000)
+                mainHandler.postDelayed({
+                    nowShowAd(callback)
+                }, PROGRESS_LOADING_DELAY)
             } catch (e: Exception) {
                 AdClickDurationTracker.error(
                     mContext,
@@ -284,69 +298,125 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                     throwable = e,
                     message = "Failed showing open-ad loading progress."
                 )
-                nowShowAd(mContext, callback)
+                nowShowAd(callback)
             }
         } else {
-            nowShowAd(mContext, callback)
+            nowShowAd(callback)
         }
     }
 
-    private fun nowShowAd(mContext: Activity, callback: () -> Unit) {
-        mAppOpenAd?.let {
-            if (Build.VERSION.SDK_INT >= 35) {
-                it.setImmersiveMode(true)
-            }
-            it.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdClicked() {
-                    super.onAdClicked()
-
-                    AdClickDurationTracker.startTracking(
-                        mContext, adType = AdType.APP_OPEN, adIdReferenceName = adRef
-                    )
-                }
-
-                override fun onAdDismissedFullScreenContent() {
-                    super.onAdDismissedFullScreenContent()
-                    mAppOpenAd = null
-                    AdKeys.isShowingOpenAd = false
-                    hideProgress()
-                    notifyDismissOpenAdCalling(mContext)
-                    callback.invoke()
-                }
-
-                override fun onAdShowedFullScreenContent() {
-                    super.onAdShowedFullScreenContent()
-                    AdKeys.isShowingOpenAd = true
-                    if (!FirebaseValue.OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE) {
-                        setBlackColor()
-                    }
-                }
-
-                override fun onAdFailedToShowFullScreenContent(p0: AdError) {
-                    super.onAdFailedToShowFullScreenContent(p0)
-                    AdClickDurationTracker.adRequestFail(
-                        mContext, adType = AdType.APP_OPEN, adIdReferenceName = adRef
-                    )
-                    hideProgress()
-                    mAppOpenAd = null
-                    notifyDismissOpenAdCalling(mContext)
-                    callback.invoke()
-                    AdKeys.isShowingOpenAd = false
-                }
-            }
-            AdClickDurationTracker.adShow(
-                mContext, adType = AdType.APP_OPEN, adIdReferenceName = adRef
-            )
-            it.show(mContext)
+    /**
+     * Resolves the activity again at show time: the one captured when the flow started can be
+     * stopped or finished by now, either because the host started its own activity from
+     * [OpenAdControllerListener.beforeOpenAdActivityShow] or because the delay outlived it.
+     */
+    private fun nowShowAd(callback: () -> Unit) {
+        val appOpenAd = mAppOpenAd
+        val mContext = getCurrentActivity()
+        if (appOpenAd == null || mContext == null || mContext.isFinishing || mContext.isDestroyed
+            || !canShowOpenAdNow()
+        ) {
+            abortOpenAdShow(callback)
+            return
         }
+        if (Build.VERSION.SDK_INT >= 35) {
+            appOpenAd.setImmersiveMode(true)
+        }
+        appOpenAd.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdClicked() {
+                super.onAdClicked()
+
+                AdClickDurationTracker.startTracking(
+                    mContext, adType = AdType.APP_OPEN, adIdReferenceName = adRef
+                )
+            }
+
+            override fun onAdDismissedFullScreenContent() {
+                super.onAdDismissedFullScreenContent()
+                mAppOpenAd = null
+                AdKeys.isShowingOpenAd = false
+                isOpenAdShowPending = false
+                hideProgress()
+                notifyDismissOpenAdCalling(mContext)
+                callback.invoke()
+            }
+
+            override fun onAdShowedFullScreenContent() {
+                super.onAdShowedFullScreenContent()
+                AdKeys.isShowingOpenAd = true
+                isOpenAdShowPending = false
+                if (!FirebaseValue.OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE) {
+                    setBlackColor()
+                }
+            }
+
+            override fun onAdFailedToShowFullScreenContent(p0: AdError) {
+                super.onAdFailedToShowFullScreenContent(p0)
+                AdClickDurationTracker.adRequestFail(
+                    mContext, adType = AdType.APP_OPEN, adIdReferenceName = adRef
+                )
+                hideProgress()
+                mAppOpenAd = null
+                AdKeys.isShowingOpenAd = false
+                isOpenAdShowPending = false
+                notifyDismissOpenAdCalling(mContext)
+                callback.invoke()
+            }
+        }
+        AdClickDurationTracker.adShow(
+            mContext, adType = AdType.APP_OPEN, adIdReferenceName = adRef
+        )
+        appOpenAd.show(mContext)
     }
 
-    private fun notifyBeforeOpenAdActivityShow(mContext: Activity) {
+    /**
+     * Re-checks, right before showing, everything [showOpenAd] checked before the delays,
+     * so a stale decision never puts an ad on screen.
+     */
+    private fun canShowOpenAdNow(): Boolean {
+        val ctx = appContext ?: return false
+        if (AdKeys.isShowingOpenAd || FirebaseValue.IS_INTER_SHOWING) {
+            return false
+        }
+        if (AdSharedPreference.getInstance(ctx).isAppPurchased) {
+            return false
+        }
+        if (!wasLoadTimeLessThanNHoursAgo()) {
+            return false
+        }
+        return isAppInForeground()
+    }
+
+    /**
+     * Process level foreground check. [AdKeys.IS_APP_PAUSE] cannot be used here because the
+     * activity the host starts behind the ad flips it while the app is still in the foreground.
+     */
+    private fun isAppInForeground(): Boolean {
+        return runCatching {
+            ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+        }.getOrDefault(true)
+    }
+
+    /**
+     * Gives up on a scheduled show and, when the host was already told to start its activity,
+     * tells it the ad is gone so the screen it started is not left waiting.
+     */
+    private fun abortOpenAdShow(callback: () -> Unit) {
+        isOpenAdShowPending = false
+        hideProgress()
+        if (isBeforeActivityShowNotified) {
+            appContext?.let { notifyDismissOpenAdCalling(it) }
+        }
+        callback.invoke()
+    }
+
+    private fun notifyBeforeOpenAdActivityShow(mContext: Context) {
         if (!FirebaseValue.OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE) {
             return
         }
         val listener = openAdControllerListener ?: return
         try {
+            isBeforeActivityShowNotified = true
             listener.beforeOpenAdActivityShow(true)
         } catch (e: Exception) {
             AdClickDurationTracker.error(
@@ -360,7 +430,8 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
         }
     }
 
-    private fun notifyDismissOpenAdCalling(mContext: Activity) {
+    private fun notifyDismissOpenAdCalling(mContext: Context) {
+        isBeforeActivityShowNotified = false
         if (!FirebaseValue.OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE) {
             return
         }
