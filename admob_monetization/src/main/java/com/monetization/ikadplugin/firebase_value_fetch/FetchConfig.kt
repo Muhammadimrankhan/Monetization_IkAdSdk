@@ -29,6 +29,8 @@ object FetchConfig {
         FirebaseValue.nativeButtonRectangle = adsConfig.nativeButtonRectangle
         FirebaseValue.ALL_ADS_OFF_ENABLE = adsConfig.allAdsOffEnable
         FirebaseValue.PROGRESS_LOADING_OPEN_AP_ENABLE = adsConfig.progressLoadingOpenAppEnable
+        FirebaseValue.OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE =
+            adsConfig.openAdBeforeActivityShowEnable
         FirebaseValue.SPLASH_INTERSTITIAL_CALL_ENABLE = adsConfig.splashInterstitialCallEnable
         FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE = adsConfig.interstitialPreloadEnable
         FirebaseValue.INTERSTITIAL_PRE_LOAD_PROGRESS_ENABLE =

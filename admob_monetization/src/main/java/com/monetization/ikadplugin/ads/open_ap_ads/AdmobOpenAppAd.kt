@@ -50,12 +50,17 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     private var adLoadingDialog: AdLoadingDialog? = null
     private var appContext: Context? = null
     private var isObserverRegistered = false
+    private var openAdControllerListener: OpenAdControllerListener? = null
 
 
     fun initOpenAd(
-        context: Context, adRef: String, openAdEnable: Boolean
+        context: Context,
+        adRef: String,
+        openAdEnable: Boolean,
+        openAdControllerListener: OpenAdControllerListener? = null
     ) {
         this.adRef = adRef
+        this.openAdControllerListener = openAdControllerListener
         this.appContext = context
         this.openAdEnable = openAdEnable
         if (!isObserverRegistered) {
@@ -75,6 +80,10 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
             }
         }
 
+    }
+
+    fun setOpenAdControllerListener(listener: OpenAdControllerListener?) {
+        this.openAdControllerListener = listener
     }
 
     fun releaseOpenAd() {
@@ -99,6 +108,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
         hideProgress()
         mAppOpenAd = null
         appContext = null
+        openAdControllerListener = null
     }
 
     fun openAppAdDisableWhenPermissionCheck() {
@@ -302,7 +312,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                 override fun onAdShowedFullScreenContent() {
                     super.onAdShowedFullScreenContent()
                     AdKeys.isShowingOpenAd = true
-                    setBlackColor()
+                    notifyBeforeOpenAdActivityShow(mContext)
                 }
 
                 override fun onAdFailedToShowFullScreenContent(p0: AdError) {
@@ -324,6 +334,26 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                 adIdReferenceName = adRef
             )
             it.show(mContext)
+        }
+    }
+
+    private fun notifyBeforeOpenAdActivityShow(mContext: Activity) {
+        if (!FirebaseValue.OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE) {
+            setBlackColor()
+            return
+        }
+        val listener = openAdControllerListener ?: return
+        try {
+            listener.beforeOpenAdActivityShow(true)
+        } catch (e: Exception) {
+            AdClickDurationTracker.error(
+                mContext,
+                adType = "APP_OPEN",
+                stage = "BEFORE_ACTIVITY_SHOW",
+                placement = adRef,
+                throwable = e,
+                message = "Failed to deliver beforeOpenAdActivityShow callback."
+            )
         }
     }
 
