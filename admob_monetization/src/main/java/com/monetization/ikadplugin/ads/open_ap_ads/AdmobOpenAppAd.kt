@@ -254,9 +254,21 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     }
 
     private fun checkOpenAdProgressAndShowAd(mContext: Activity, callback: () -> Unit) {
-        mAppOpenAd?.let {
-            notifyBeforeOpenAdActivityShow(mContext)
+        if (FirebaseValue.OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE) {
+            mAppOpenAd?.let {
+                notifyBeforeOpenAdActivityShow(mContext)
+            }
+            Handler(Looper.getMainLooper()).postDelayed({
+                launchOpenAd(mContext, callback)
+            }, 1500)
+
+        } else {
+            launchOpenAd(mContext, callback)
         }
+
+    }
+
+    private fun launchOpenAd(mContext: Activity, callback: () -> Unit) {
         if (FirebaseValue.PROGRESS_LOADING_OPEN_AP_ENABLE) {
             try {
                 hideShowProgress(mContext)
