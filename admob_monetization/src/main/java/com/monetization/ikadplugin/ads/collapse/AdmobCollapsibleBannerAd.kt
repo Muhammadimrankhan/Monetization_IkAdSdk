@@ -1,31 +1,25 @@
 package com.monetization.ikadplugin.ads.collapse
 
 import android.app.Activity
-import android.graphics.Rect
-import android.os.Build
 import android.os.Bundle
-import android.util.DisplayMetrics
-import android.view.View
-import android.view.ViewGroup
-import android.view.WindowMetrics
-import android.widget.LinearLayout
-import android.widget.Toast
 import com.google.ads.mediation.admob.AdMobAdapter
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
 import com.monetization.ikadplugin.ads.FirebaseValue
+import com.monetization.ikadplugin.ads.banner.anchoredAdaptiveBannerSize
+import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
+import com.monetization.ikadplugin.ads_duration_tracker.AdType
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
-import com.monetization.ikadplugin.BuildConfig
-import com.monetization.ikadplugin.ads.NativeShimmerEffect.addShimmerLayout
-import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
-import com.monetization.ikadplugin.ads_duration_tracker.AdType
 
+/**
+ * Loads bottom-anchored collapsible banners. The loaded [AdView] is handed to Compose
+ * (`BannerAdSlot` / `IkComposeCollapsibleBannerAd`), which hosts it.
+ */
 class AdmobCollapsibleBannerAd {
 
     companion object {
@@ -46,6 +40,15 @@ class AdmobCollapsibleBannerAd {
     private var bannerAd: AdView? = null
     private var canRequestAd = true
 
+    /** The caller waiting on the in-flight request, if any. */
+    private var pendingConsumer: BannerConsumer? = null
+
+    private class BannerConsumer(
+        val adReference: String,
+        val onLoaded: (AdView) -> Unit,
+        val onFailed: () -> Unit,
+    )
+
     fun hasAd(): Boolean {
         return bannerAd != null
     }
@@ -54,234 +57,142 @@ class AdmobCollapsibleBannerAd {
         return bannerAd != null || !canRequestAd
     }
 
-    private fun getAdSize(activity: Activity): AdSize {
+    private fun canRequest(activity: Activity, enable: Boolean): Boolean =
+        !FirebaseValue.ALL_ADS_OFF_ENABLE &&
+            enable &&
+            GoogleMobileAdsConsentManager.getInstance(activity).canRequestAds &&
+            !AdSharedPreference.getInstance(activity).isAppPurchased &&
+            InternetController.getInstance(activity).isInternetConnected
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-
-            val windowMetrics: WindowMetrics = activity.windowManager.currentWindowMetrics
-            val bounds: Rect = windowMetrics.bounds
-            val adWidthPixels = bounds.width()
-
-            val density = activity.resources.displayMetrics.density
-            val adWidth = (adWidthPixels / density).toInt()
-
-            AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(activity, adWidth)
-
-        } else {
-
-            val display = activity.windowManager.defaultDisplay
-            val outMetrics = DisplayMetrics()
-            display.getMetrics(outMetrics)
-
-            val widthPixels = outMetrics.widthPixels.toFloat()
-            val density = outMetrics.density
-            val adWidth = (widthPixels / density).toInt()
-
-            AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(activity, adWidth)
-        }
-    }
-
+    /** Preloads a collapsible banner so the next [loadCollapsibleBanner] can show it immediately. */
     fun loadAd(
         adReference: String,
         activity: Activity,
         enable: Boolean
     ) {
-
         try {
-
-            if (FirebaseValue.ALL_ADS_OFF_ENABLE ||
-                !enable ||
-                AdSharedPreference.getInstance(activity).isAppPurchased ||
-                !InternetController.getInstance(activity).isInternetConnected
-            ) return
-
-            if (bannerAd == null) {
-
-                if (!canRequestAd) return
-
-                canRequestAd = false
-                AdClickDurationTracker.adRequestCalling(activity,
-                    adType = AdType.BANNER,
-                    adIdReferenceName = adReference
-                )
-                val adId = FetchConfig.getBannerId(adReference)
-
-                val adView = AdView(activity)
-                adView.adUnitId = adId
-                adView.setAdSize(getAdSize(activity))
-
-                val extras = Bundle()
-                extras.putString("collapsible", "bottom")
-
-                val request = AdRequest.Builder()
-                    .addNetworkExtrasBundle(AdMobAdapter::class.java, extras)
-                    .build()
-
-                adView.adListener = object : AdListener() {
-                    override fun onAdClicked() {
-                        super.onAdClicked()
-
-                        AdClickDurationTracker.startTracking(activity,
-                            adType = AdType.BANNER,
-                            adIdReferenceName = adReference
-                        )
-                    }
-
-                    override fun onAdLoaded() {
-
-                        canRequestAd = true
-                        bannerAd = adView
-                        AdClickDurationTracker.adRequestMatch(activity,
-                            adType = AdType.BANNER,
-                            adIdReferenceName = adReference
-                        )
-                    }
-
-                    override fun onAdFailedToLoad(error: LoadAdError) {
-                        AdClickDurationTracker.adRequestFail(activity,
-                            adType = AdType.BANNER,
-                            adIdReferenceName = adReference
-                        )
-
-                        canRequestAd = true
-                        bannerAd = null
-                    }
-                }
-
-                adView.loadAd(request)
+            if (canRequest(activity, enable) && bannerAd == null && canRequestAd) {
+                requestAd(adReference, activity)
             }
-
         } catch (e: Exception) {
-
             canRequestAd = true
             bannerAd = null
         }
     }
 
-    fun populateAd(
+    /**
+     * Hands a collapsible banner to [onLoaded]: the preloaded one if there is one, otherwise a
+     * freshly requested one. [onFailed] fires when ads are suppressed or the request fails. With
+     * [loadNewAd] the next banner is preloaded once this one is handed out.
+     */
+    fun loadCollapsibleBanner(
         adReference: String,
         activity: Activity,
         enable: Boolean,
-        adFrame: LinearLayout,
-        loadNewAd: Boolean = false
+        loadNewAd: Boolean = false,
+        onLoaded: (AdView) -> Unit,
+        onFailed: () -> Unit = {},
     ) {
-
-        if (enable && !AdSharedPreference.getInstance(activity).isAppPurchased && bannerAd != null) {
-
-            bannerAd?.let {
-
-                try {
-
-                    adFrame.visibility = View.VISIBLE
-
-                    it.parent?.let { parent ->
-                        (parent as ViewGroup).removeAllViews()
-                    }
-
-                    adFrame.removeAllViews()
-                    adFrame.visibility = View.VISIBLE
-                    adFrame.addView(it)
-                    AdClickDurationTracker.adShow(activity,
-                        adType = AdType.BANNER,
-                        adIdReferenceName = adReference
-                    )
-                    bannerAd = null
-
-                    if (loadNewAd) {
-                        loadAd(adReference, activity, enable)
-                    }
-
-                } catch (_: Exception) {
-                }
-            }
-        } else {
-            loadAndShowAd(adReference, activity, enable, adFrame)
-        }
-    }
-
-    private fun loadAndShowAd(
-        adReference: String,
-        activity: Activity,
-        enable: Boolean,
-        adFrame: LinearLayout
-    ) {
-
         try {
-            if (FirebaseValue.ALL_ADS_OFF_ENABLE ||
-                !enable ||
-                !GoogleMobileAdsConsentManager.getInstance(activity).canRequestAds ||
-                AdSharedPreference.getInstance(activity).isAppPurchased ||
-                !InternetController.getInstance(activity).isInternetConnected
-            ) {
-                adFrame.removeAllViews()
-                adFrame.visibility = View.GONE
+            if (!canRequest(activity, enable)) {
+                onFailed()
                 return
             }
 
-            if (!canRequestAd) return
+            val cached = bannerAd
+            if (cached != null) {
+                bannerAd = null
+                AdClickDurationTracker.adShow(activity,
+                    adType = AdType.BANNER,
+                    adIdReferenceName = adReference
+                )
+                onLoaded(cached)
+                if (loadNewAd) loadAd(adReference, activity, enable)
+                return
+            }
 
-            canRequestAd = false
-            AdClickDurationTracker.adRequestCalling(activity,
-                adType = AdType.BANNER,
-                adIdReferenceName = adReference
+            pendingConsumer?.onFailed?.invoke()
+            pendingConsumer = BannerConsumer(
+                adReference = adReference,
+                onLoaded = { adView ->
+                    onLoaded(adView)
+                    if (loadNewAd) loadAd(adReference, activity, enable)
+                },
+                onFailed = onFailed,
             )
-            addShimmerLayout(adFrame, 2, activity)
+            if (canRequestAd) requestAd(adReference, activity)
+        } catch (e: Exception) {
+            canRequestAd = true
+            pendingConsumer = null
+            onFailed()
+        }
+    }
 
-            val adId = FetchConfig.getBannerId(adReference)
+    private fun requestAd(adReference: String, activity: Activity) {
+        canRequestAd = false
+        AdClickDurationTracker.adRequestCalling(activity,
+            adType = AdType.BANNER,
+            adIdReferenceName = adReference
+        )
 
-            val adView = AdView(activity)
-            adView.adUnitId = adId
-            adView.setAdSize(getAdSize(activity))
+        val adView = AdView(activity)
+        adView.adUnitId = FetchConfig.getBannerId(adReference)
+        adView.setAdSize(anchoredAdaptiveBannerSize(activity))
 
-            val extras = Bundle()
-            extras.putString("collapsible", "bottom")
+        val extras = Bundle()
+        extras.putString("collapsible", "bottom")
 
-            val request = AdRequest.Builder()
-                .addNetworkExtrasBundle(AdMobAdapter::class.java, extras)
-                .build()
+        val request = AdRequest.Builder()
+            .addNetworkExtrasBundle(AdMobAdapter::class.java, extras)
+            .build()
 
-            adView.adListener = object : AdListener() {
-                override fun onAdClicked() {
-                    super.onAdClicked()
+        adView.adListener = object : AdListener() {
+            override fun onAdClicked() {
+                super.onAdClicked()
+                AdClickDurationTracker.startTracking(activity,
+                    adType = AdType.BANNER,
+                    adIdReferenceName = adReference
+                )
+            }
 
-                    AdClickDurationTracker.startTracking(activity,
-                        adType = AdType.BANNER,
-                        adIdReferenceName = adReference
-                    )
-                }
-
-                override fun onAdLoaded() {
-                    canRequestAd = true
-                    adFrame.visibility = View.VISIBLE
-                    adFrame.removeAllViews()
-                    adFrame.addView(adView)
+            override fun onAdLoaded() {
+                canRequestAd = true
+                AdClickDurationTracker.adRequestMatch(activity,
+                    adType = AdType.BANNER,
+                    adIdReferenceName = adReference
+                )
+                val consumer = pendingConsumer
+                pendingConsumer = null
+                if (consumer != null) {
                     AdClickDurationTracker.adShow(activity,
                         adType = AdType.BANNER,
-                        adIdReferenceName = adReference
+                        adIdReferenceName = consumer.adReference
                     )
-                    AdClickDurationTracker.adRequestMatch(activity,
-                        adType = AdType.BANNER,
-                        adIdReferenceName = adReference
-                    )
-                }
-
-                override fun onAdFailedToLoad(error: LoadAdError) {
-                    AdClickDurationTracker.adRequestFail(activity,
-                        adType = AdType.BANNER,
-                        adIdReferenceName = adReference
-                    )
-                    canRequestAd = true
-                    adFrame.removeAllViews()
-                    adFrame.visibility = View.GONE
+                    consumer.onLoaded(adView)
+                } else {
+                    bannerAd = adView
                 }
             }
 
-            adView.loadAd(request)
-
-        } catch (e: Exception) {
-            adFrame.removeAllViews()
-            adFrame.visibility = View.GONE
+            override fun onAdFailedToLoad(error: LoadAdError) {
+                AdClickDurationTracker.adRequestFail(activity,
+                    adType = AdType.BANNER,
+                    adIdReferenceName = adReference
+                )
+                canRequestAd = true
+                bannerAd = null
+                val consumer = pendingConsumer
+                pendingConsumer = null
+                consumer?.onFailed?.invoke()
+            }
         }
+
+        adView.loadAd(request)
+    }
+
+    /** Drops the callbacks registered by a caller that is no longer interested. */
+    internal fun cancelPending(onFailed: () -> Unit) {
+        if (pendingConsumer?.onFailed === onFailed) pendingConsumer = null
     }
 
     fun destroy() {

@@ -1,11 +1,6 @@
 package com.monetization.ikadplugin.compose
 
 import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
-import android.view.ViewGroup
-import android.widget.LinearLayout
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -13,44 +8,38 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
-import com.monetization.ikadplugin.ads.banner.AdmobBannerAd
-import com.monetization.ikadplugin.ads.collapse.AdmobCollapsibleBannerAd
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.monetization.ikadplugin.ads.interstitial_ads.AdmobInterstitialAd
 import com.monetization.ikadplugin.ads.interstitial_ads.InterstitialControllerListener
-import com.monetization.ikadplugin.ads.native_ads.AdmobNativeAd
 import com.monetization.ikadplugin.ads.rewarded_interstitial.AdmobRewardedInterstitialAd
 import com.monetization.ikadplugin.ads.rewarded_interstitial.RewardedInterstitialControllerListener
 
-@Composable
-fun IkComposeBannerAd(activity: Activity,
-                      adReference: String,
-                      enable: Boolean,
-                      modifier: Modifier = Modifier,
-                      isRectangleBanner: Boolean = false,
-                      loadNewAd: Boolean = false
-) {
+/*
+ * One-call inline ads. Each placement ([adReference]) gets its own ViewModel in the current
+ * ViewModelStoreOwner (Activity or navigation back-stack entry), so the loaded ad survives
+ * recomposition and returning to the screen. Use [NativeAdSlot] / [BannerAdSlot] directly to
+ * control the ViewModel yourself.
+ */
 
-    AndroidView(modifier = modifier, factory = { context ->
-        LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-        }
-    }, update = { adFrame ->
-        activity.let {
-            AdmobBannerAd.getInstance().populateBannerAd(
-                adReference = adReference,
-                context = it,
-                enable = enable,
-                isRectangleBanner = isRectangleBanner,
-                adLayout = adFrame,
-                loadNewAd = loadNewAd
-            )
-        }
-    })
+@Composable
+fun IkComposeBannerAd(
+    activity: Activity,
+    adReference: String,
+    enable: Boolean,
+    modifier: Modifier = Modifier,
+    isRectangleBanner: Boolean = false,
+    loadNewAd: Boolean = false
+) {
+    BannerAdSlot(
+        activity = activity,
+        viewModel = viewModel(key = "ik_banner_$adReference") {
+            BannerAdViewModel(adReference, collapsible = false)
+        },
+        enable = enable,
+        modifier = modifier,
+        isRectangleBanner = isRectangleBanner,
+        loadNewAd = loadNewAd,
+    )
 }
 
 @Composable
@@ -61,25 +50,15 @@ fun IkComposeCollapsibleBannerAd(
     modifier: Modifier = Modifier,
     loadNewAd: Boolean = false
 ) {
-
-    AndroidView(modifier = modifier, factory = { context ->
-        LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-        }
-    }, update = { adFrame ->
-        activity.let {
-            AdmobCollapsibleBannerAd.getInstance().populateAd(
-                adReference = adReference,
-                activity = it,
-                enable = enable,
-                adFrame = adFrame,
-                loadNewAd = loadNewAd
-            )
-        }
-    })
+    BannerAdSlot(
+        activity = activity,
+        viewModel = viewModel(key = "ik_collapsible_banner_$adReference") {
+            BannerAdViewModel(adReference, collapsible = true)
+        },
+        enable = enable,
+        modifier = modifier,
+        loadNewAd = loadNewAd,
+    )
 }
 
 @Composable
@@ -92,24 +71,17 @@ fun IkComposeNativeAd(
     loadNewAd: Boolean = false,
     nativeCtaColorAdPosition: Int = -1
 ) {
-    AndroidView(modifier = modifier, factory = { viewContext ->
-        LinearLayout(viewContext).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-        }
-    }, update = { adFrame ->
-        AdmobNativeAd.getInstance().populateNativeAd(
-            adViewType = adViewType,
-            adIdNativeReference = adIdNativeReference,
-            context = context,
-            enable = enable,
-            adFrame = adFrame,
-            loadNewAd = loadNewAd,
-            nativeCtaColorAdPosition = nativeCtaColorAdPosition
-        )
-    })
+    NativeAdSlot(
+        activity = context,
+        viewModel = viewModel(key = "ik_native_$adIdNativeReference") {
+            NativeAdViewModel(adIdNativeReference)
+        },
+        enable = enable,
+        modifier = modifier,
+        adViewType = adViewType,
+        nativeCtaColorAdPosition = nativeCtaColorAdPosition,
+        loadNewAd = loadNewAd,
+    )
 }
 //
 //@Composable
@@ -200,8 +172,8 @@ class IkComposeInterstitialController internal constructor(
         if (!enable) {
             return
         }
-        val appCompatActivity = activity as? AppCompatActivity ?: return
-        AdmobInterstitialAd.getInstance().preLoadAd(adReference, appCompatActivity)
+        val currentActivity = activity ?: return
+        AdmobInterstitialAd.getInstance().preLoadAd(adReference, currentActivity)
     }
 
     fun showInterstitialCounter(
@@ -427,10 +399,10 @@ class IkComposeRewardedInterstitialController internal constructor(
         onIapShow: () -> Unit = {}
     ) {
         if (!enable) return
-        val appCompatActivity = activity as? AppCompatActivity ?: return
+        val currentActivity = activity ?: return
         AdmobRewardedInterstitialAd.getInstance().preLoadAd(
             adIdReferenceName = adReference,
-            mContext = appCompatActivity,
+            mContext = currentActivity,
             interstitialControllerListener = rewardedListener(
                 onAdClosed = onAdClosed,
                 onAdRewardGranted = onAdRewardGranted,

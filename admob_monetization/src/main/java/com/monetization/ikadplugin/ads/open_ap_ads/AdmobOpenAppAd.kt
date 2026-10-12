@@ -72,20 +72,8 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
         this.appContext = context
         this.openAdEnable = openAdEnable
         if (!isObserverRegistered) {
-            runCatching {
-                ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-                isObserverRegistered = true
-            }.onFailure {
-                Log.e("OpenAd", "Failed to add lifecycle observer", it)
-                AdClickDurationTracker.error(
-                    context,
-                    adType = "APP_OPEN",
-                    stage = "LIFECYCLE_ADD_OBSERVER",
-                    placement = adRef,
-                    throwable = it,
-                    message = "Failed to register process lifecycle observer."
-                )
-            }
+            ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+            isObserverRegistered = true
         }
 
     }
@@ -95,23 +83,9 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     }
 
     fun releaseOpenAd() {
-        runCatching {
-            if (isObserverRegistered) {
-                ProcessLifecycleOwner.get().lifecycle.removeObserver(this)
-                isObserverRegistered = false
-            }
-        }.onFailure {
-            Log.e("OpenAd", "Failed to remove lifecycle observer", it)
-            val ctx = appContext ?: return
-
-            AdClickDurationTracker.error(
-                ctx,
-                adType = "APP_OPEN",
-                stage = "LIFECYCLE_REMOVE_OBSERVER",
-                placement = adRef,
-                throwable = it,
-                message = "Failed to unregister process lifecycle observer."
-            )
+        if (isObserverRegistered) {
+            ProcessLifecycleOwner.get().lifecycle.removeObserver(this)
+            isObserverRegistered = false
         }
         mainHandler.removeCallbacksAndMessages(null)
         isOpenAdShowPending = false
@@ -397,9 +371,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
      * activity the host starts behind the ad flips it while the app is still in the foreground.
      */
     private fun isAppInForeground(): Boolean {
-        return runCatching {
-            ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
-        }.getOrDefault(true)
+        return ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
     }
 
     /**

@@ -4,7 +4,6 @@ import android.app.Activity
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
@@ -212,7 +211,7 @@ class AdmobRewardedInterstitialAd {
 
     fun preLoadAd(
         adIdReferenceName: String,
-        mContext: AppCompatActivity,
+        mContext: Activity,
         interstitialControllerListener: RewardedInterstitialControllerListener
     ) {
         try {

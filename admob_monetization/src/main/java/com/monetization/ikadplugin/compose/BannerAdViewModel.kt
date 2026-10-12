@@ -1,13 +1,12 @@
 package com.monetization.ikadplugin.compose
 
 import android.app.Activity
-import android.view.View
 import com.google.android.gms.ads.AdView
 import com.monetization.ikadplugin.ads.banner.AdmobBannerAd
 import com.monetization.ikadplugin.ads.collapse.AdmobCollapsibleBannerAd
 
 /**
- * Owns the state and the cached ad view of one banner placement, identified by [placementKey]
+ * Owns the state and the loaded [AdView] of one banner placement, identified by [placementKey]
  * (e.g. `main_collapse_banner`).
  *
  * [collapsible] picks the underlying ad class: the collapsible banner (anchored, with the collapse
@@ -16,7 +15,9 @@ import com.monetization.ikadplugin.ads.collapse.AdmobCollapsibleBannerAd
 class BannerAdViewModel(
     placementKey: String,
     private val collapsible: Boolean,
-) : InlineAdViewModel(placementKey, AdView::class.java) {
+) : InlineAdViewModel<AdView>(placementKey) {
+
+    override val bindsToActivity: Boolean = true
 
     fun load(
         activity: Activity,
@@ -24,35 +25,44 @@ class BannerAdViewModel(
         isRectangleBanner: Boolean = false,
         loadNewAd: Boolean = false,
     ) {
-        val requestKey = listOf(enable, isRectangleBanner, loadNewAd)
         requestLoad(
-            requestKey = requestKey,
+            requestKey = listOf(enable, isRectangleBanner, loadNewAd),
             activity = activity,
             allowed = canRequestInlineAd(activity, enable),
-        ) { adFrame ->
+        ) { onLoaded, onFailed ->
             if (collapsible) {
-                AdmobCollapsibleBannerAd.getInstance().populateAd(
+                AdmobCollapsibleBannerAd.getInstance().loadCollapsibleBanner(
                     adReference = placementKey,
                     activity = activity,
                     enable = enable,
-                    adFrame = adFrame,
                     loadNewAd = loadNewAd,
+                    onLoaded = onLoaded,
+                    onFailed = onFailed,
                 )
             } else {
-                AdmobBannerAd.getInstance().populateBannerAd(
+                AdmobBannerAd.getInstance().loadBanner(
                     adReference = placementKey,
-                    context = activity,
+                    activity = activity,
                     enable = enable,
                     isRectangleBanner = isRectangleBanner,
-                    adLayout = adFrame,
                     loadNewAd = loadNewAd,
+                    onLoaded = onLoaded,
+                    onFailed = onFailed,
                 )
             }
         }
     }
 
-    override fun destroyAdView(adView: View) {
-        (adView as? AdView)?.destroy()
+    override fun destroyAd(ad: AdView) {
+        ad.destroy()
+    }
+
+    override fun cancelPendingRequest(onFailed: () -> Unit) {
+        if (collapsible) {
+            AdmobCollapsibleBannerAd.getInstance().cancelPending(onFailed)
+        } else {
+            AdmobBannerAd.getInstance().cancelPending(onFailed)
+        }
     }
 
     override fun onCleared() {

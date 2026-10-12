@@ -1,32 +1,73 @@
 package com.monetization.admob
 
-import android.graphics.Color
 import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.monetization.ikadplugin.ads.FirebaseValue
 import com.monetization.ikadplugin.ads_id.NetworkIdConfig
+import com.monetization.ikadplugin.compose.IkComposeBannerAd
+import com.monetization.ikadplugin.compose.IkComposeNativeAd
 import com.monetization.ikadplugin.firebase_value_fetch.AdsConfig
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.firebase_value_fetch.GradientColors
-import com.monetization.ikadplugin.network_instance.IkAdSdk
 import com.monetization.ikadplugin.pref.OneTimePurchaseConfig
 import com.monetization.ikadplugin.subscription.SubscriptionConfig
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+        configureAds()
 
+        setContent {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .safeDrawingPadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                BasicText("IkAdPlugin Compose sample")
+                IkComposeNativeAd(
+                    context = this@MainActivity,
+                    adIdNativeReference = "home_native",
+                    enable = true,
+                    adViewType = 1,
+                )
+                IkComposeNativeAd(
+                    context = this@MainActivity,
+                    adIdNativeReference = "details_native",
+                    enable = true,
+                    adViewType = 4,
+                )
+                IkComposeBannerAd(
+                    activity = this@MainActivity,
+                    adReference = "bottom_banner",
+                    enable = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+
+    private fun configureAds() {
         val oneTimePurchaseConfig = OneTimePurchaseConfig("")
         FetchConfig.assignOneTimeRemoveAdsConfig(oneTimePurchaseConfig)
 

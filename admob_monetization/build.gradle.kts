@@ -46,7 +46,7 @@ android {
     }
 }
 group = "com.github.Muhammadimrankhan"
-version = "0.1.31"
+version = "0.1"
 
 
 afterEvaluate {
@@ -56,7 +56,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.Muhammadimrankhan"
                 artifactId = "Monetization_IkAdSdk"
-                version = "0.1.31"
+                version = "0.1"
             }
         }
     }
@@ -64,16 +64,14 @@ afterEvaluate {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.19.0")
-    implementation("androidx.appcompat:appcompat:1.7.1")
-    implementation("com.google.android.material:material:1.14.0")
     implementation("com.google.android.gms:play-services-ads:25.4.0")
     implementation("androidx.lifecycle:lifecycle-process:2.11.0")
+    implementation("androidx.activity:activity-compose:1.13.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
     implementation("androidx.compose.runtime:runtime:1.12.1")
     implementation("androidx.compose.ui:ui:1.12.1")
+    implementation("androidx.compose.foundation:foundation:1.12.1")
     implementation("com.android.billingclient:billing-ktx:9.1.0")
-    //Text and Size-ing Libs
-    implementation("com.intuit.sdp:sdp-android:1.1.1")
-    implementation("com.intuit.ssp:ssp-android:1.1.1")
 //    implementation(libs.koin)
     implementation("com.google.android.ump:user-messaging-platform:4.0.0")
 
