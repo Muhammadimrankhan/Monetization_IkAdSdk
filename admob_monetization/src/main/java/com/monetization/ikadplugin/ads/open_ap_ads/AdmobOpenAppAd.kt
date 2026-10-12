@@ -271,11 +271,16 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
         }
         isOpenAdShowPending = true
         if (FirebaseValue.OPEN_AD_BEFORE_ACTIVITY_SHOW_ENABLE && openAdControllerListener != null) {
-            // The activity the host starts is the loading screen in this flow,
-            // so the open-ad progress dialog is skipped on purpose.
             notifyBeforeOpenAdActivityShow(mContext)
             mainHandler.postDelayed({
-                nowShowAd(callback)
+                // The activity the host started is in front by now, so the progress
+                // dialog is attached to it and not to the activity captured above.
+                val currentActivity = getCurrentActivity()
+                if (currentActivity == null || currentActivity.isFinishing || currentActivity.isDestroyed) {
+                    abortOpenAdShow(callback)
+                } else {
+                    launchOpenAd(currentActivity, callback)
+                }
             }, BEFORE_ACTIVITY_SHOW_DELAY)
         } else {
             launchOpenAd(mContext, callback)
