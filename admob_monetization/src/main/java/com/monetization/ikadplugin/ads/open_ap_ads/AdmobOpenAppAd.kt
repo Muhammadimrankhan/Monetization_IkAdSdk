@@ -20,6 +20,7 @@ import com.monetization.ikadplugin.ads.AdKeys
 import com.monetization.ikadplugin.ads.AdLoadingDialog
 import com.monetization.ikadplugin.ads.FirebaseValue
 import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
+import com.monetization.ikadplugin.ads_duration_tracker.AdRevenueTracker
 import com.monetization.ikadplugin.ads_duration_tracker.AdType
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
@@ -327,6 +328,9 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
         if (Build.VERSION.SDK_INT >= 35) {
             appOpenAd.setImmersiveMode(true)
         }
+        appOpenAd.onPaidEventListener = AdRevenueTracker.paidEventListener(
+            mContext, AdType.APP_OPEN, adRef, appOpenAd.adUnitId
+        ) { appOpenAd.responseInfo }
         appOpenAd.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdClicked() {
                 super.onAdClicked()

@@ -15,6 +15,7 @@ import com.monetization.ikadplugin.ads.FirebaseValue
 import com.monetization.ikadplugin.ads.NativeShimmerEffect.addShimmerLayout
 import com.monetization.ikadplugin.ads.NativeViewPopulate
 import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
+import com.monetization.ikadplugin.ads_duration_tracker.AdRevenueTracker
 import com.monetization.ikadplugin.ads_duration_tracker.AdType
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
@@ -82,6 +83,9 @@ class AdmobBannerAd {
                     val adView = AdView(context)
                     adView.adUnitId = adId
                     adView.setAdSize(bannerSize)
+                    adView.onPaidEventListener = AdRevenueTracker.paidEventListener(
+                        context, AdType.BANNER, adReference, adId
+                    ) { adView.responseInfo }
 
                     adView.adListener = object : AdListener() {
 
@@ -221,6 +225,9 @@ class AdmobBannerAd {
                     val adView = AdView(context)
                     adView.adUnitId = adId
                     adView.setAdSize(bannerSize)
+                    adView.onPaidEventListener = AdRevenueTracker.paidEventListener(
+                        context, AdType.BANNER, adReference, adId
+                    ) { adView.responseInfo }
 
                     adView.adListener = object : AdListener() {
                         override fun onAdClicked() {

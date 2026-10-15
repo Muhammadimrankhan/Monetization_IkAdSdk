@@ -34,7 +34,7 @@ object NativeShimmerEffect {
         }
         adFrame.visibility = View.VISIBLE
         try {
-            adFrame.removeAllViews()
+            NativeViewPopulate.clearAdFrame(adFrame)
         } catch (_: Exception) {
         }
         shimmerContainer.addView(

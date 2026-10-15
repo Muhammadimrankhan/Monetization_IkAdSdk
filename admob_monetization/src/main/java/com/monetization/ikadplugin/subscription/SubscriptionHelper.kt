@@ -226,31 +226,33 @@ class SubscriptionHelper(
         if (isBillingClientDead) {
             return
         }
-        if (subscriptionClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS).responseCode == BillingClient.BillingResponseCode.OK) {
+        val featureResponseCode =
+            subscriptionClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS).responseCode
+        if (featureResponseCode == BillingClient.BillingResponseCode.OK) {
             subscriptionClient.queryPurchasesAsync(
                 QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS)
                     .build(), object : PurchasesResponseListener {
                     override fun onQueryPurchasesResponse(
                         p0: BillingResult, p1: MutableList<Purchase>
                     ) {
-                        if (p0.responseCode == BillingClient.BillingResponseCode.OK) {
-                            if (p1.isNotEmpty()) {
-                                for (purchase in p1) {
-                                    if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED && checkSubscriptionsId(
-                                            getSku(purchase.products)
-                                        )
-                                    ) {
-                                        if (purchase.isAcknowledged) {
-                                            setSubscribed(purchase)
-                                            ioScope.launch {
-                                                _appSubscribed.send(true)
-                                            }
-                                        } else {
-                                            acknowledgedPurchase(purchase)
-                                        }
-                                        return
+                        if (p0.responseCode != BillingClient.BillingResponseCode.OK) {
+                            // A failed query says nothing about ownership: keep the cached state.
+                            return
+                        }
+                        for (purchase in p1) {
+                            if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED && checkSubscriptionsId(
+                                    getSku(purchase.products)
+                                )
+                            ) {
+                                if (purchase.isAcknowledged) {
+                                    setSubscribed(purchase)
+                                    ioScope.launch {
+                                        _appSubscribed.send(true)
                                     }
+                                } else {
+                                    acknowledgedPurchase(purchase)
                                 }
+                                return
                             }
                         }
                         resetAllPurchases()
@@ -260,7 +262,9 @@ class SubscriptionHelper(
                     }
 
                 })
-        } else {
+        } else if (featureResponseCode == BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED) {
+            // Only a definite "not supported" clears the subscription; a disconnected or
+            // unavailable service is a temporary error and keeps the cached state.
             resetAllPurchases()
         }
     }
@@ -369,7 +373,7 @@ class SubscriptionHelper(
                 val context = requireContext()
                 subscriptionClient = BillingClient.newBuilder(context).enablePendingPurchases(
                     PendingPurchasesParams.newBuilder().enableOneTimeProducts().build()
-                ).setListener(this@SubscriptionHelper).build()
+                ).setListener(this@SubscriptionHelper).enableAutoServiceReconnection().build()
             }
             if (!isBillingReady) {
                 subscriptionClient.apply {
