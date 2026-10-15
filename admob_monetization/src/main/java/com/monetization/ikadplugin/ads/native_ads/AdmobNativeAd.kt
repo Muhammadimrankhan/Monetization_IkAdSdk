@@ -440,7 +440,7 @@ class AdmobNativeAd {
                     )
                 }
             } else {
-                NativeViewPopulate.0.1.32clearAdFrame(adFrame)
+                NativeViewPopulate.clearAdFrame(adFrame)
                 adFrame.visibility = View.GONE
             }
         } catch (e: Exception) {
