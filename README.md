@@ -634,6 +634,15 @@ FetchConfig.assignSubscriptionRemoveAdsConfig(
 It short-circuits (calling back immediately) when consent was already gathered in this process, when
 the user has purchased, or when there is no internet.
 
+- When consent was given in an earlier session, `MobileAds.initialize()` starts right away, in
+  parallel with the consent refresh, so the splash request goes out sooner.
+- The callback waits for initialization to finish (at most 3 s), so mediation adapters are ready for
+  the first request. `IkAdSdk.whenInitialized { }` runs code after initialization yourself.
+- In debug builds, `consentVerifyID` (the hashed id logcat prints) makes the device an ads test device
+  and forces the EEA consent geography for it.
+- The splash interstitial waits `AdsConfig.splashTime` seconds. An ad that loads after the timeout is
+  kept for the next placement and never shown over the screen the user moved on to.
+
 ```kotlin
 IkAdSdk.startSplash(
     context = this,                             // must be an Activity
@@ -981,8 +990,12 @@ Three `remember…` factories exist for it:
 | Factory | Behaviour on entering the composition |
 | --- | --- |
 | `rememberIkComposeRewardedInterstitialAdPreLoad` | Preloads when `preloadOnStart = true`; you show it manually. |
-| `rememberIkComposeRewardedInterstitialAdCounter` | Immediately runs the counter show flow. |
-| `rememberIkComposeRewardedInterstitialAdShowEveryClick` | Immediately runs the every-click show flow. |
+| `rememberIkComposeRewardedInterstitialAdCounter` | Preloads when `preloadOnStart = true`; call `showRewardedInterstitialAdCounter()` from a button. |
+| `rememberIkComposeRewardedInterstitialAdShowEveryClick` | Preloads when `preloadOnStart = true`; call `showRewardedInterstitialAdEveryClick()` from a button. |
+
+None of the factories shows an ad on its own: AdMob requires a rewarded interstitial to follow a user
+action, with an intro that states the reward and lets the user decline. `onAdRewardGranted(granted)`
+receives `true` only when the user earned the reward.
 
 ### Ad slots that survive navigation
 
@@ -1199,6 +1212,43 @@ demand behind the loading dialog. Reset the counter any time with `resetIntersti
 
 ---
 
+## Maximizing match rate and show rate
+
+Match rate = filled ÷ requested; show rate = impressions ÷ filled. The SDK handles the code side; fill
+itself is decided by demand (mediation, geography, consent, floors), so those steps are yours.
+
+**What the SDK does for you**
+
+| Behaviour | Effect |
+| --- | --- |
+| Native and banner ads are pooled per ad unit; every waiting slot gets its own request | Several slots on one screen all fill; placements never take each other's ads |
+| Cached ads older than 50 min are dropped, never shown | No shows that fail or never count an impression |
+| Network / internal errors retry with backoff (2 s … 64 s, 5 tries); no-fills are not retried | Recovers from flaky networks without spending requests that lower match rate |
+| A preload that failed is restarted as soon as a placement finds no ad | The next eligible tap has an ad |
+| App open ad loads as soon as `initOpenAd` runs | The first return to the app already has an ad |
+| Banners pause while their screen is not resumed | No automatic refreshes nobody sees |
+| Large anchored adaptive banner size | Google's recommended anchored size |
+| Every load checks consent first | No request is wasted or made before consent |
+
+**What you need to do**
+
+1. **Add mediation with bidding.** This is the largest match-rate gain. In the AdMob console create a
+   mediation group per format and add bidding sources (for example AppLovin, Meta Audience Network,
+   Unity Ads, Liftoff, Pangle, Mintegral, InMobi). Add each network's Google adapter to your **app**
+   module, taking current versions from Google's mediation docs. No SDK code changes are needed;
+   `startSplash` already waits for adapter initialization.
+2. **Add every mediation partner to your GDPR message** (Privacy & messaging → ad partners), or they
+   get no consent in the EEA and fill less.
+3. **Use one ad unit per placement** in `NetworkIdConfig`, and set floors in the AdMob console.
+4. **Recommended remote config:** `interstitialPreloadEnable = true`,
+   `interstitialPreloadProgressEnable = false` (skips the 1 s loading overlay before a preloaded
+   ad), `rewardedInterstitialPreloadEnable = true`.
+5. **Measure** with `ad_impression_ik` ÷ `ad_request_Loaded` per `ad_id_ref`, and `error_code` on
+   `ad_request_fail` (3 = no fill: add demand; 0 / 2 = transient: retried automatically; 1 = wrong ID).
+6. Open the Ad Inspector (`MobileAds.openAdInspector`) on a test device to see which networks bid.
+
+---
+
 ## Firebase Analytics events
 
 `AdClickDurationTracker.init(application)` registers lifecycle callbacks and logs the full funnel.
@@ -1209,9 +1259,12 @@ also shows a toast.
 | --- | --- |
 | `ad_request_calling` | A request is about to be sent |
 | `ad_request_Loaded` | The request filled |
-| `ad_request_fail` | The request failed |
+| `ad_request_fail` | The request failed (`error_code`, `error_message`) |
 | `ad_request_duration_end` | Request round-trip finished |
-| `ad_show` | An ad was displayed |
+| `ad_show` | The SDK handed the ad to a slot or called `show()` — not a confirmed impression |
+| `ad_impression_ik` | AdMob counted an impression. Show rate = `ad_impression_ik` ÷ `ad_request_Loaded` (banners also count each refresh) |
+| `ad_impression_revenue` | Impression-level revenue: `value`, `currency`, `precision`, `ad_source` (winning network) |
+| `ad_show_fail` | A loaded full-screen ad could not be shown (`error_code`, `error_message`) |
 | `ad_click` | The user clicked an ad |
 | `ad_click_return_duration` | The user came back to the app after a click (with duration) |
 | `user_earn_rewarded_value` | A reward was granted |
@@ -1375,6 +1428,8 @@ Then verify:
 
 ### App open ads show where they should not
 
+- Returning from a banner or native ad's landing page never shows an app open ad
+  (`AdKeys.skipNextOpenAd`, set automatically on click).
 - Set `AdKeys.canShowOpenAd = false` for blocked screens (do it in your `Application` callbacks).
 - Call `openAppAdDisableWhenPermissionCheck()` before requesting runtime permissions.
 - Keep splash, purchase and any full-screen-ad screens on the blocked list.

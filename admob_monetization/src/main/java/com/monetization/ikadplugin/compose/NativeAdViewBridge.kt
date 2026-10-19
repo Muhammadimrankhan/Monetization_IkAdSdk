@@ -35,32 +35,36 @@ internal fun IkNativeAdView(
     content: @Composable () -> Unit,
 ) {
     val currentContent by rememberUpdatedState(content)
+    val currentAd by rememberUpdatedState(nativeAd)
     AndroidView(
         modifier = modifier,
         factory = { context ->
             NativeAdView(context).apply {
                 id = View.generateViewId()
+                val adView = this
                 addView(
                     ComposeView(context).apply {
                         layoutParams = FrameLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT,
                         )
+                        // Set once: the inner composition reads the latest content / ad through the
+                        // updated states above, so recomposing the slot does not rebuild the ad views.
+                        setContent {
+                            CompositionLocalProvider(LocalNativeAdView provides adView) {
+                                currentContent()
+                                // Effects run after the asset views above were created and registered,
+                                // which setNativeAd() needs in order to wire up click and impression
+                                // tracking.
+                                val ad = currentAd
+                                DisposableEffect(ad) {
+                                    adView.setNativeAd(ad)
+                                    onDispose { }
+                                }
+                            }
+                        }
                     }
                 )
-            }
-        },
-        update = { adView ->
-            (adView.getChildAt(0) as ComposeView).setContent {
-                CompositionLocalProvider(LocalNativeAdView provides adView) {
-                    currentContent()
-                    // Effects run after the asset views above were created and registered, which
-                    // setNativeAd() needs in order to wire up click and impression tracking.
-                    DisposableEffect(nativeAd) {
-                        adView.setNativeAd(nativeAd)
-                        onDispose { }
-                    }
-                }
             }
         },
     )

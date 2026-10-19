@@ -18,9 +18,11 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.monetization.ikadplugin.ads.AdKeys
 import com.monetization.ikadplugin.ads.AdLoadingDialog
+import com.monetization.ikadplugin.ads.AdRetryPolicy
 import com.monetization.ikadplugin.ads.FirebaseValue
 import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
 import com.monetization.ikadplugin.ads_duration_tracker.AdType
+import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.network_instance.IkAdSdk.getCurrentActivity
@@ -59,6 +61,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var isOpenAdShowPending = false
     private var isBeforeActivityShowNotified = false
+    private val retryPolicy = AdRetryPolicy()
 
 
     fun initOpenAd(
@@ -75,7 +78,8 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
             ProcessLifecycleOwner.get().lifecycle.addObserver(this)
             isObserverRegistered = true
         }
-
+        // Load now, so the first return to the app already has an ad (fetchAd checks consent).
+        fetchAd()
     }
 
     fun setOpenAdControllerListener(listener: OpenAdControllerListener?) {
@@ -88,6 +92,7 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
             isObserverRegistered = false
         }
         mainHandler.removeCallbacksAndMessages(null)
+        retryPolicy.cancel()
         isOpenAdShowPending = false
         isBeforeActivityShowNotified = false
         hideProgress()
@@ -105,6 +110,13 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
         val ctx = appContext ?: return
         try {
             AdKeys.IS_APP_PAUSE = false
+            if (AdKeys.skipNextOpenAd) {
+                // Returning from an inline ad's landing page: no app open ad on top of the user's
+                // screen, but make sure one is ready for the next real return.
+                AdKeys.skipNextOpenAd = false
+                fetchAd()
+                return
+            }
             if (!AdKeys.isPermissionCheck && AdKeys.canShowOpenAd && !AdSharedPreference.getInstance(
                     ctx
                 ).isAppPurchased && openAdEnable
@@ -141,12 +153,15 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
     private fun fetchAd() {
 
         val ctx = appContext ?: return
-        if (FirebaseValue.ALL_ADS_OFF_ENABLE || isAdAvailable || !InternetController.getInstance(
-                ctx
-            ).isInternetConnected || AdSharedPreference.getInstance(ctx).isAppPurchased || AdKeys.IS_APP_PAUSE
+        if (FirebaseValue.ALL_ADS_OFF_ENABLE || !openAdEnable || isAdAvailable ||
+            !GoogleMobileAdsConsentManager.getInstance(ctx).canRequestAds ||
+            !InternetController.getInstance(ctx).isInternetConnected ||
+            AdSharedPreference.getInstance(ctx).isAppPurchased || AdKeys.IS_APP_PAUSE
         ) {
             return
         }
+        // An expired ad is useless: drop it so the request below replaces it.
+        mAppOpenAd = null
         if (!canRequestAd) {
             return
         }
@@ -162,6 +177,12 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                     canRequestAd = true
                     mAppOpenAd = appOpenAd
                     loadTime = Date().time
+                    retryPolicy.reset()
+                    appOpenAd.setOnPaidEventListener { value ->
+                        AdClickDurationTracker.adPaidEvent(
+                            ctx, AdType.APP_OPEN, adRef, value, appOpenAd.responseInfo
+                        )
+                    }
                     AdClickDurationTracker.adRequestMatch(
                         ctx, adType = AdType.APP_OPEN, adIdReferenceName = adRef
                     )
@@ -170,10 +191,17 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                     super.onAdFailedToLoad(loadAdError)
                     AdClickDurationTracker.adRequestFail(
-                        ctx, adType = AdType.APP_OPEN, adIdReferenceName = adRef
+                        ctx,
+                        adType = AdType.APP_OPEN,
+                        adIdReferenceName = adRef,
+                        errorCode = loadAdError.code,
+                        errorMessage = loadAdError.message
                     )
                     canRequestAd = true
                     mAppOpenAd = null
+                    if (AdRetryPolicy.isRetryable(loadAdError.code)) {
+                        retryPolicy.schedule { fetchAd() }
+                    }
                 }
             })
     }
@@ -310,6 +338,13 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
                 )
             }
 
+            override fun onAdImpression() {
+                super.onAdImpression()
+                AdClickDurationTracker.adImpression(
+                    mContext, adType = AdType.APP_OPEN, adIdReferenceName = adRef
+                )
+            }
+
             override fun onAdDismissedFullScreenContent() {
                 super.onAdDismissedFullScreenContent()
                 mAppOpenAd = null
@@ -331,8 +366,12 @@ class AdmobOpenAppAd : LifecycleObserver, DefaultLifecycleObserver {
 
             override fun onAdFailedToShowFullScreenContent(p0: AdError) {
                 super.onAdFailedToShowFullScreenContent(p0)
-                AdClickDurationTracker.adRequestFail(
-                    mContext, adType = AdType.APP_OPEN, adIdReferenceName = adRef
+                AdClickDurationTracker.adShowFail(
+                    mContext,
+                    adType = AdType.APP_OPEN,
+                    adIdReferenceName = adRef,
+                    errorCode = p0.code,
+                    errorMessage = p0.message
                 )
                 hideProgress()
                 mAppOpenAd = null

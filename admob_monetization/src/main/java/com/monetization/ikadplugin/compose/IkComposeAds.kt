@@ -330,9 +330,13 @@ fun rememberIkComposeRewardedInterstitialAdCounter(activity: Activity,
         controller.updateRewardCallback(onUserEarnedReward)
     }
 
+    // Never show from composition: a rewarded ad must follow a user action (AdMob policy). Call
+    // controller.showRewardedInterstitialAdCounter(...) from the button that offers the reward.
     LaunchedEffect(activity, enable, preloadOnStart, adReference) {
         controller.updateActivity(activity)
-        controller.showRewardedInterstitialAdCounter(enable)
+        if (preloadOnStart) {
+            controller.preload(enable)
+        }
     }
 
     DisposableEffect(controller) {
@@ -359,9 +363,13 @@ fun rememberIkComposeRewardedInterstitialAdShowEveryClick(activity: Activity,
         controller.updateRewardCallback(onUserEarnedReward)
     }
 
+    // Never show from composition: a rewarded ad must follow a user action (AdMob policy). Call
+    // controller.showRewardedInterstitialAdEveryClick(...) from the button that offers the reward.
     LaunchedEffect(activity, enable, preloadOnStart, adReference) {
         controller.updateActivity(activity)
-        controller.showRewardedInterstitialAdEveryClick(enable)
+        if (preloadOnStart) {
+            controller.preload(enable)
+        }
     }
 
     DisposableEffect(controller) {
@@ -478,7 +486,7 @@ class IkComposeRewardedInterstitialController internal constructor(
     ): RewardedInterstitialControllerListener {
         return object : RewardedInterstitialControllerListener {
             override fun onAdClosed() = onAdClosed()
-            override fun onAdRewardGranted(boolean: Boolean) = onAdRewardGranted(false)
+            override fun onAdRewardGranted(boolean: Boolean) = onAdRewardGranted(boolean)
             override fun onAdLoaded() = onAdLoaded()
             override fun onAdFailed() = onAdFailed()
             override fun onIapShow() = onIapShow()

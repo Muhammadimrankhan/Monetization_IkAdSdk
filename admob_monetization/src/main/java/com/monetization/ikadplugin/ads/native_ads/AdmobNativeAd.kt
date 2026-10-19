@@ -8,6 +8,7 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.VideoOptions
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdOptions
+import com.monetization.ikadplugin.ads.AdRetryPolicy
 import com.monetization.ikadplugin.ads.FirebaseValue
 import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
 import com.monetization.ikadplugin.ads_duration_tracker.AdType
@@ -20,8 +21,10 @@ import com.monetization.ikadplugin.pref.AdSharedPreference
  * Loads native ads. Rendering is done in Compose (see `NativeAdSlot` / `IkComposeNativeAd`), so this
  * class only hands out [NativeAd] objects.
  *
- * At most one request is in flight at a time. A preloaded ad is cached until someone asks for one;
- * a caller that asks while a request is in flight is handed that ad when it arrives.
+ * Ads are pooled per ad unit, so placements never steal each other's ads and two slots on one
+ * screen each get their own request. A pooled ad older than [AdRetryPolicy.MAX_AD_AGE_MS] is
+ * dropped instead of shown. Network / internal errors are retried with backoff; no-fills are not,
+ * because retrying a no-fill only lowers the match rate.
  */
 class AdmobNativeAd {
 
@@ -35,13 +38,12 @@ class AdmobNativeAd {
                 INSTANCE ?: AdmobNativeAd().also { INSTANCE = it }
             }
         }
+
+        /** Preloaded ads kept per ad unit. */
+        private const val MAX_POOLED_PER_UNIT = 2
     }
 
-    private var canRequestAd = true
-    private var largeAndSmallNativeAd: NativeAd? = null
-
-    /** The caller waiting on the in-flight request, if any. */
-    private var pendingConsumer: NativeAdConsumer? = null
+    private class CachedAd(val ad: NativeAd, val loadedAt: Long)
 
     private class NativeAdConsumer(
         val adIdNativeReference: String,
@@ -49,27 +51,49 @@ class AdmobNativeAd {
         val onFailed: () -> Unit,
     )
 
+    private class UnitSlot(val adUnitId: String) {
+        val pool = ArrayDeque<CachedAd>()
+        val waiters = ArrayDeque<NativeAdConsumer>()
+        var inFlight = 0
+        val retry = AdRetryPolicy()
+    }
+
+    private val slots = mutableMapOf<String, UnitSlot>()
+
+    private fun slotFor(reference: String): UnitSlot {
+        val adUnitId = FetchConfig.getNativeId(reference)
+        return slots.getOrPut(adUnitId) { UnitSlot(adUnitId) }
+    }
+
     fun onDestroyNativeAd(context: Context) {
-        try {
-            largeAndSmallNativeAd?.destroy()
-        } catch (e: Exception) {
-            AdClickDurationTracker.warn(context,
-                adType = "NATIVE",
-                stage = "DESTROY",
-                placement = "unknown",
-                message = "Failed destroying native ad: ${e.message}"
-            )
-        } finally {
-            largeAndSmallNativeAd = null
+        slots.values.forEach { slot ->
+            slot.retry.cancel()
+            slot.pool.forEach { cached ->
+                try {
+                    cached.ad.destroy()
+                } catch (e: Exception) {
+                    AdClickDurationTracker.warn(
+                        context,
+                        adType = "NATIVE",
+                        stage = "DESTROY",
+                        placement = slot.adUnitId,
+                        message = "Failed destroying native ad: ${e.message}"
+                    )
+                }
+            }
+            slot.pool.clear()
         }
     }
 
-    fun hasLargeAdOrLoading(): Boolean {
-        return (largeAndSmallNativeAd != null || !canRequestAd)
-    }
+    fun hasLargeAdOrLoading(): Boolean = slots.values.any { it.pool.isNotEmpty() || it.inFlight > 0 }
 
-    fun hasLargeAd(): Boolean {
-        return largeAndSmallNativeAd != null
+    fun hasLargeAd(): Boolean = slots.values.any { it.pool.isNotEmpty() }
+
+    /** True when a fresh ad for [adIdNativeReference]'s ad unit is ready to show. */
+    fun hasAd(adIdNativeReference: String): Boolean {
+        val slot = slotFor(adIdNativeReference)
+        dropExpired(slot)
+        return slot.pool.isNotEmpty()
     }
 
     internal fun canRequest(context: Context, enable: Boolean): Boolean =
@@ -83,11 +107,13 @@ class AdmobNativeAd {
         adIdNativeReference: String, context: Context, enable: Boolean
     ) {
         try {
-            if (canRequest(context, enable) && largeAndSmallNativeAd == null && canRequestAd) {
-                requestAd(adIdNativeReference, context)
+            if (!canRequest(context, enable)) return
+            val slot = slotFor(adIdNativeReference)
+            dropExpired(slot)
+            if (slot.pool.isEmpty() && slot.inFlight == 0) {
+                requestAd(slot, adIdNativeReference, context)
             }
         } catch (e: Exception) {
-            canRequestAd = true
             AdClickDurationTracker.error(context,
                 adType = "NATIVE",
                 stage = "PRELOAD",
@@ -99,7 +125,7 @@ class AdmobNativeAd {
     }
 
     /**
-     * Hands a native ad to [onLoaded]: the preloaded one if there is one, otherwise a freshly
+     * Hands a native ad to [onLoaded]: a pooled one if there is a fresh one, otherwise a freshly
      * requested one. [onFailed] fires when ads are suppressed (ads off, no consent, purchased,
      * offline, [enable] false) or the request fails.
      *
@@ -120,32 +146,35 @@ class AdmobNativeAd {
                 return
             }
 
-            val cached = largeAndSmallNativeAd
+            val slot = slotFor(adIdNativeReference)
+            dropExpired(slot)
+            val cached = slot.pool.removeFirstOrNull()
             if (cached != null) {
-                largeAndSmallNativeAd = null
                 AdClickDurationTracker.adShow(context,
                     adType = AdType.NATIVE,
                     adIdReferenceName = adIdNativeReference
                 )
-                onLoaded(cached)
+                onLoaded(cached.ad)
                 if (loadNewAd) preLoadNativeAd(adIdNativeReference, context, enable)
                 return
             }
 
-            // A newer caller takes over the in-flight request; the one it replaces gives up.
-            pendingConsumer?.onFailed?.invoke()
-            pendingConsumer = NativeAdConsumer(
-                adIdNativeReference = adIdNativeReference,
-                onLoaded = { ad ->
-                    onLoaded(ad)
-                    if (loadNewAd) preLoadNativeAd(adIdNativeReference, context, enable)
-                },
-                onFailed = onFailed,
+            slot.waiters.addLast(
+                NativeAdConsumer(
+                    adIdNativeReference = adIdNativeReference,
+                    onLoaded = { ad ->
+                        onLoaded(ad)
+                        if (loadNewAd) preLoadNativeAd(adIdNativeReference, context, enable)
+                    },
+                    onFailed = onFailed,
+                )
             )
-            if (canRequestAd) requestAd(adIdNativeReference, context)
+            // Every waiting slot gets its own request; one already in flight covers one waiter.
+            if (slot.waiters.size > slot.inFlight) {
+                slot.retry.cancel()
+                requestAd(slot, adIdNativeReference, context)
+            }
         } catch (e: Exception) {
-            canRequestAd = true
-            pendingConsumer = null
             AdClickDurationTracker.error(context,
                 adType = "NATIVE",
                 stage = "LOAD_AND_SHOW",
@@ -157,30 +186,47 @@ class AdmobNativeAd {
         }
     }
 
-    private fun requestAd(adIdNativeReference: String, context: Context) {
-        canRequestAd = false
+    private fun dropExpired(slot: UnitSlot) {
+        val now = AdRetryPolicy.now()
+        while (slot.pool.isNotEmpty() && now - slot.pool.first().loadedAt > AdRetryPolicy.MAX_AD_AGE_MS) {
+            slot.pool.removeFirst().ad.destroy()
+        }
+    }
+
+    private fun requestAd(slot: UnitSlot, adIdNativeReference: String, context: Context) {
+        slot.inFlight++
         AdClickDurationTracker.adRequestCalling(context,
             adType = AdType.NATIVE,
             adIdReferenceName = adIdNativeReference
         )
-        val adId = FetchConfig.getNativeId(adIdNativeReference)
-        val builder = AdLoader.Builder(context, adId)
+        val appContext = context.applicationContext
+        // Placement that the loaded ad ends up in, for impression / revenue events.
+        var shownReference = adIdNativeReference
+        val builder = AdLoader.Builder(context, slot.adUnitId)
         builder.forNativeAd { newNativeAd: NativeAd ->
-            canRequestAd = true
-            AdClickDurationTracker.adRequestMatch(context,
+            slot.inFlight = (slot.inFlight - 1).coerceAtLeast(0)
+            slot.retry.reset()
+            AdClickDurationTracker.adRequestMatch(appContext,
                 adType = AdType.NATIVE,
                 adIdReferenceName = adIdNativeReference
             )
-            val consumer = pendingConsumer
-            pendingConsumer = null
+            val consumer = slot.waiters.removeFirstOrNull()
+            if (consumer != null) shownReference = consumer.adIdNativeReference
+            newNativeAd.setOnPaidEventListener { value ->
+                AdClickDurationTracker.adPaidEvent(
+                    appContext, AdType.NATIVE, shownReference, value, newNativeAd.responseInfo
+                )
+            }
             if (consumer != null) {
-                AdClickDurationTracker.adShow(context,
+                AdClickDurationTracker.adShow(appContext,
                     adType = AdType.NATIVE,
                     adIdReferenceName = consumer.adIdNativeReference
                 )
                 consumer.onLoaded(newNativeAd)
+            } else if (slot.pool.size < MAX_POOLED_PER_UNIT) {
+                slot.pool.addLast(CachedAd(newNativeAd, AdRetryPolicy.now()))
             } else {
-                largeAndSmallNativeAd = newNativeAd
+                newNativeAd.destroy()
             }
         }
         builder.withNativeAdOptions(
@@ -192,23 +238,40 @@ class AdmobNativeAd {
         val adLoader = builder.withAdListener(object : AdListener() {
             override fun onAdClicked() {
                 super.onAdClicked()
-                AdClickDurationTracker.startTracking(context,
+                AdClickDurationTracker.startTracking(appContext,
                     adType = AdType.NATIVE,
-                    adIdReferenceName = adIdNativeReference
+                    adIdReferenceName = shownReference
+                )
+            }
+
+            override fun onAdImpression() {
+                super.onAdImpression()
+                AdClickDurationTracker.adImpression(appContext,
+                    adType = AdType.NATIVE,
+                    adIdReferenceName = shownReference
                 )
             }
 
             override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                 super.onAdFailedToLoad(loadAdError)
-                AdClickDurationTracker.adRequestFail(context,
+                slot.inFlight = (slot.inFlight - 1).coerceAtLeast(0)
+                AdClickDurationTracker.adRequestFail(appContext,
                     adType = AdType.NATIVE,
-                    adIdReferenceName = adIdNativeReference
+                    adIdReferenceName = adIdNativeReference,
+                    errorCode = loadAdError.code,
+                    errorMessage = loadAdError.message
                 )
-                canRequestAd = true
-                largeAndSmallNativeAd = null
-                val consumer = pendingConsumer
-                pendingConsumer = null
-                consumer?.onFailed?.invoke()
+                // Only the waiters this request was covering give up.
+                while (slot.waiters.size > slot.inFlight) {
+                    slot.waiters.removeLast().onFailed()
+                }
+                if (AdRetryPolicy.isRetryable(loadAdError.code)) {
+                    slot.retry.schedule {
+                        if (slot.pool.isEmpty() && slot.inFlight == 0) {
+                            preLoadNativeAd(adIdNativeReference, appContext, true)
+                        }
+                    }
+                }
             }
         }).build()
         adLoader.loadAd(AdRequest.Builder().build())
@@ -216,6 +279,6 @@ class AdmobNativeAd {
 
     /** Drops [onLoaded]/[onFailed] registered by a caller that is no longer interested. */
     internal fun cancelPending(onFailed: () -> Unit) {
-        if (pendingConsumer?.onFailed === onFailed) pendingConsumer = null
+        slots.values.forEach { slot -> slot.waiters.removeAll { it.onFailed === onFailed } }
     }
 }

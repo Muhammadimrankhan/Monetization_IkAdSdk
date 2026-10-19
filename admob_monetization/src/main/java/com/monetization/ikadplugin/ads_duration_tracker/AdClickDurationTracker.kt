@@ -7,7 +7,10 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
+import com.google.android.gms.ads.AdValue
+import com.google.android.gms.ads.ResponseInfo
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.monetization.ikadplugin.ads.AdKeys
 import com.monetization.ikadplugin.subscription.SubscriptionConstant.isDebug
 
 object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
@@ -22,11 +25,17 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
     private const val EVENT_AD_REQUEST_MATCH = "ad_request_Loaded"
     private const val EVENT_AD_USER_EARN_REWARDED = "user_earn_rewarded_value"
     private const val EVENT_AD_SHOW = "ad_show"
+    private const val EVENT_AD_IMPRESSION = "ad_impression_ik"
+    private const val EVENT_AD_PAID = "ad_impression_revenue"
+    private const val EVENT_AD_SHOW_FAIL = "ad_show_fail"
+    private const val TAG = "IkAdSdk"
 
     private const val PARAM_AD_TYPE = "ad_type"
     private const val PARAM_AD_ID_REF = "ad_id_ref"
     private const val PARAM_DURATION_MILLIS = "duration_millis"
     private const val PARAM_DURATION_SECONDS = "duration_seconds"
+    private const val PARAM_ERROR_CODE = "error_code"
+    private const val PARAM_ERROR_MESSAGE = "error_message"
 
     /**
      * Optional guard to avoid logging fake/instant resumes.
@@ -60,6 +69,9 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
 
         clickStartTimeMillis = SystemClock.elapsedRealtime()
         waitingForAppResume = true
+        if (adType == AdType.BANNER || adType == AdType.NATIVE) {
+            AdKeys.skipNextOpenAd = true
+        }
 
         clickedAdType = adType.firebaseName
         clickedAdIdReferenceName = adIdReferenceName
@@ -126,14 +138,14 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
     fun adRequestFail(
         context: Context,
         adType: AdType,
-        adIdReferenceName: String = ""
+        adIdReferenceName: String = "",
+        errorCode: Int? = null,
+        errorMessage: String? = null
     ) {
-        reset()
-
         if (isDebug) {
             Toast.makeText(
                 context,
-                "$EVENT_AD_REQUEST_FAIL\nAd Type: ${adType.firebaseName}\nAd Ref: $adIdReferenceName",
+                "$EVENT_AD_REQUEST_FAIL\nAd Type: ${adType.firebaseName}\nAd Ref: $adIdReferenceName\nCode: $errorCode ${errorMessage.orEmpty()}",
                 Toast.LENGTH_SHORT
             ).show()
         } else {
@@ -142,6 +154,80 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
                 Bundle().apply {
                     putString(PARAM_AD_TYPE, adType.firebaseName)
                     putString(PARAM_AD_ID_REF, adIdReferenceName)
+                    errorCode?.let { putInt(PARAM_ERROR_CODE, it) }
+                    errorMessage?.let { putString(PARAM_ERROR_MESSAGE, it.take(100)) }
+                }
+            )
+        }
+    }
+
+    /** A loaded full-screen ad that AdMob could not show (expired, already shown, no window...). */
+    fun adShowFail(
+        context: Context,
+        adType: AdType,
+        adIdReferenceName: String = "",
+        errorCode: Int? = null,
+        errorMessage: String? = null
+    ) {
+        if (isDebug) {
+            Log.d(TAG, "$EVENT_AD_SHOW_FAIL ${adType.firebaseName} $adIdReferenceName $errorCode $errorMessage")
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_SHOW_FAIL,
+                Bundle().apply {
+                    putString(PARAM_AD_TYPE, adType.firebaseName)
+                    putString(PARAM_AD_ID_REF, adIdReferenceName)
+                    errorCode?.let { putInt(PARAM_ERROR_CODE, it) }
+                    errorMessage?.let { putString(PARAM_ERROR_MESSAGE, it.take(100)) }
+                }
+            )
+        }
+    }
+
+    /**
+     * AdMob counted an impression. Show rate = this event ÷ [adRequestMatch]; [adShow] only means
+     * the SDK handed the ad over or called show().
+     */
+    fun adImpression(
+        context: Context,
+        adType: AdType,
+        adIdReferenceName: String = ""
+    ) {
+        if (isDebug) {
+            Log.d(TAG, "$EVENT_AD_IMPRESSION ${adType.firebaseName} $adIdReferenceName")
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_IMPRESSION,
+                Bundle().apply {
+                    putString(PARAM_AD_TYPE, adType.firebaseName)
+                    putString(PARAM_AD_ID_REF, adIdReferenceName)
+                }
+            )
+        }
+    }
+
+    /** Impression-level revenue reported by `setOnPaidEventListener`. */
+    fun adPaidEvent(
+        context: Context,
+        adType: AdType,
+        adIdReferenceName: String,
+        adValue: AdValue,
+        responseInfo: ResponseInfo?
+    ) {
+        val value = adValue.valueMicros / 1_000_000.0
+        val adSource = responseInfo?.loadedAdapterResponseInfo?.adSourceName.orEmpty()
+        if (isDebug) {
+            Log.d(TAG, "$EVENT_AD_PAID ${adType.firebaseName} $adIdReferenceName $value ${adValue.currencyCode} $adSource")
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_PAID,
+                Bundle().apply {
+                    putString(PARAM_AD_TYPE, adType.firebaseName)
+                    putString(PARAM_AD_ID_REF, adIdReferenceName)
+                    putDouble(FirebaseAnalytics.Param.VALUE, value)
+                    putString(FirebaseAnalytics.Param.CURRENCY, adValue.currencyCode)
+                    putInt("precision", adValue.precisionType)
+                    putString("ad_source", adSource)
                 }
             )
         }
@@ -152,8 +238,6 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
         adType: AdType,
         adIdReferenceName: String = ""
     ) {
-        reset()
-
         if (isDebug) {
             Toast.makeText(
                 context,

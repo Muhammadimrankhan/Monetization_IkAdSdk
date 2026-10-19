@@ -13,13 +13,16 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.monetization.ikadplugin.ads.AdKeys
 import com.monetization.ikadplugin.ads.AdKeys.iapScreenShow
 import com.monetization.ikadplugin.ads.AdLoadingDialog
+import com.monetization.ikadplugin.ads.AdRetryPolicy
 import com.monetization.ikadplugin.ads.FirebaseValue
 import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
 import com.monetization.ikadplugin.ads_duration_tracker.AdType
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
+import com.monetization.ikadplugin.network_instance.IkAdSdk
 import com.monetization.ikadplugin.pref.AdSharedPreference
+import java.lang.ref.WeakReference
 
 class AdmobInterstitialAd {
 
@@ -42,6 +45,19 @@ class AdmobInterstitialAd {
     private var isExitAppCall = false
     private var canRequestAd = true
     private var admobInterAd: InterstitialAd? = null
+        set(value) {
+            field = value
+            if (value != null) adLoadedAt = AdRetryPolicy.now()
+        }
+    private var adLoadedAt = 0L
+    private val retryPolicy = AdRetryPolicy()
+
+    /**
+     * True from [initAdMobSplash] until the splash flow ends (timeout, close, show). An ad that
+     * arrives after the window closed is kept for the next placement, never shown over the screen
+     * the user has already moved on to.
+     */
+    private var splashWindowOpen = false
     private var mInterstitialControllerListener: InterstitialControllerListener? = null
     private var isHandlerRunning = false
     private var adIdReference = ""
@@ -67,7 +83,7 @@ class AdmobInterstitialAd {
             isHandlerRunning = false
             canRequestAd = true
             notifyAdClosedOnce()
-            activity?.let {
+            activityRef?.get()?.let {
                 AdClickDurationTracker.adRequestDurationEnd(
                     it, adType = AdType.INTERSTITIAL, adIdReferenceName = "Splash"
                 )
@@ -83,6 +99,7 @@ class AdmobInterstitialAd {
     }
 
     private fun notifyAdClosedOnce() {
+        splashWindowOpen = false
         if (!canDispatchTerminalCallback) return
         canDispatchTerminalCallback = false
         mInterstitialControllerListener?.onAdClosed()
@@ -93,10 +110,38 @@ class AdmobInterstitialAd {
         mInterstitialControllerListener = null
         isPauseDone = false
         isHandlerRunning = false
+        splashWindowOpen = false
     }
 
     fun hasAd(): Boolean {
+        dropExpiredAd()
         return (admobInterAd != null)
+    }
+
+    /** Forgets a loaded ad that is too old to show reliably. */
+    private fun dropExpiredAd() {
+        if (admobInterAd != null && AdRetryPolicy.now() - adLoadedAt > AdRetryPolicy.MAX_AD_AGE_MS) {
+            admobInterAd = null
+        }
+    }
+
+    /** Consent / ads-off / purchase / network gate shared by every load path. */
+    private fun canLoad(context: Activity): Boolean =
+        !FirebaseValue.ALL_ADS_OFF_ENABLE &&
+            GoogleMobileAdsConsentManager.getInstance(context).canRequestAds &&
+            !AdSharedPreference.getInstance(context).isAppPurchased &&
+            InternetController.getInstance(context).isInternetConnected
+
+    /** Retries a failed background preload with backoff, for transient errors only. */
+    private fun scheduleRetry(errorCode: Int, adIdReferenceName: String, context: Activity) {
+        if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE || !AdRetryPolicy.isRetryable(errorCode)) return
+        val ref = WeakReference(context)
+        retryPolicy.schedule {
+            val retryActivity = ref.get() ?: IkAdSdk.getCurrentActivity()
+            if (retryActivity != null && !retryActivity.isFinishing && !retryActivity.isDestroyed) {
+                preLoadAd(adIdReferenceName, retryActivity)
+            }
+        }
     }
 
     fun pauseAd() {
@@ -104,11 +149,11 @@ class AdmobInterstitialAd {
         removeCallBacks()
     }
 
-    private var activity: Activity? = null
+    private var activityRef: WeakReference<Activity>? = null
     private fun startHandler() {
         if (!isHandlerRunning) {
             isHandlerRunning = true
-            handlerAd.postDelayed(runnable, 13000)
+            handlerAd.postDelayed(runnable, FirebaseValue.SPLASH_TIME.coerceAtLeast(1L) * 1000L)
         }
     }
 
@@ -137,7 +182,7 @@ class AdmobInterstitialAd {
     fun resumeAd(
         activity: Activity, enable: Boolean
     ) {
-        if (isPauseDone && !FirebaseValue.IS_INTER_SHOWING) {
+        if (isPauseDone && splashWindowOpen && !FirebaseValue.IS_INTER_SHOWING) {
             isPauseDone = false
             if (!isHandlerRunning) {
                 handlerAd.postDelayed({
@@ -166,6 +211,7 @@ class AdmobInterstitialAd {
     ) {
         mInterstitialControllerListener = interstitialControllerListener
         markTerminalPending()
+        dropExpiredAd()
         if (FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(context).canRequestAds || !enable || !InternetController.getInstance(
                 context
             ).isInternetConnected || AdSharedPreference.getInstance(context).isAppPurchased
@@ -176,7 +222,9 @@ class AdmobInterstitialAd {
         isExitAppCall = false
         isPauseDone = false
         isHandlerRunning = false
-        activity = context
+        splashWindowOpen = true
+        activityRef = WeakReference(context)
+        dropExpiredAd()
         loadAdForSplash(adId, context)
 
     }
@@ -213,14 +261,12 @@ class AdmobInterstitialAd {
                                 canRequestAd = true
                                 admobInterAd = p0
                                 adIdReference = adIdReferenceName
-                                mInterstitialControllerListener?.onAdLoaded()
-                                if (FirebaseValue.SPLASH_INTERSTITIAL_CALL_ENABLE) {
-                                    if (isHandlerRunning) {
-                                        showSplashInterstitial(
-                                            context, true
-                                        )
-                                    }
-                                } else {
+                                retryPolicy.reset()
+                                // Show only inside the splash window. A late ad (timeout already
+                                // fired, or the app is paused and resumeAd() will show it) stays
+                                // cached for the next placement.
+                                if (splashWindowOpen && !isPauseDone) {
+                                    mInterstitialControllerListener?.onAdLoaded()
                                     showSplashInterstitial(
                                         context, true
                                     )
@@ -243,7 +289,9 @@ class AdmobInterstitialAd {
                                 AdClickDurationTracker.adRequestFail(
                                     context,
                                     adType = AdType.INTERSTITIAL,
-                                    adIdReferenceName = adIdReferenceName
+                                    adIdReferenceName = adIdReferenceName,
+                                    errorCode = p0.code,
+                                    errorMessage = p0.message
                                 )
 
                             }
@@ -295,10 +343,10 @@ class AdmobInterstitialAd {
     private fun showAdmobAd(activity: Activity) {
         try {
             if (admobInterAd != null && !AdKeys.IS_APP_PAUSE && !AdKeys.isShowingOpenAd) {
-                admobInterAd?.show(activity)
                 AdClickDurationTracker.adShow(
                     activity, adType = AdType.INTERSTITIAL, adIdReferenceName = adIdReference
                 )
+                admobInterAd?.show(activity)
             } else {
                 notifyAdClosedOnce()
             }
@@ -322,10 +370,8 @@ class AdmobInterstitialAd {
 
     private fun loadAd(adIdReferenceName: String, mContext: Activity) {
         try {
-            if (!AdSharedPreference.getInstance(mContext).isAppPurchased && InternetController.getInstance(
-                    mContext
-                ).isInternetConnected
-            ) {
+            if (canLoad(mContext)) {
+                dropExpiredAd()
                 if (admobInterAd != null) {
                     return
                 }
@@ -354,10 +400,11 @@ class AdmobInterstitialAd {
                             canRequestAd = true
                             admobInterAd = p0
                             adIdReference = adIdReferenceName
+                            retryPolicy.reset()
                             if (!FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE && isHandlerRunningInstant) {
                                 adLoadingDialog?.dismissAlertDialog()
                                 removeCallBacksInstant()
-                                setAdmobFullScreen(activity = mContext, false, "")
+                                setAdmobFullScreen(activity = mContext, false, adIdReferenceName)
                             }
                             AdClickDurationTracker.adRequestMatch(
                                 mContext,
@@ -378,8 +425,11 @@ class AdmobInterstitialAd {
                             AdClickDurationTracker.adRequestFail(
                                 mContext,
                                 adType = AdType.INTERSTITIAL,
-                                adIdReferenceName = adIdReferenceName
+                                adIdReferenceName = adIdReferenceName,
+                                errorCode = p0.code,
+                                errorMessage = p0.message
                             )
+                            scheduleRetry(p0.code, adIdReferenceName, mContext)
 
                         }
                     })
@@ -406,10 +456,8 @@ class AdmobInterstitialAd {
 
     private fun loadAdInstant(adIdReferenceName: String, mContext: Activity) {
         try {
-            if (!AdSharedPreference.getInstance(mContext).isAppPurchased && InternetController.getInstance(
-                    mContext
-                ).isInternetConnected
-            ) {
+            if (canLoad(mContext)) {
+                dropExpiredAd()
                 if (admobInterAd != null) {
                     return
                 }
@@ -437,10 +485,11 @@ class AdmobInterstitialAd {
                             canRequestAd = true
                             admobInterAd = p0
                             adIdReference = adIdReferenceName
+                            retryPolicy.reset()
                             if (isHandlerRunningInstant) {
                                 adLoadingDialog?.dismissAlertDialog()
                                 removeCallBacksInstant()
-                                setAdmobFullScreen(activity = mContext, false, "")
+                                setAdmobFullScreen(activity = mContext, false, adIdReferenceName)
                             }
                             AdClickDurationTracker.adRequestMatch(
                                 mContext,
@@ -461,8 +510,11 @@ class AdmobInterstitialAd {
                             AdClickDurationTracker.adRequestFail(
                                 mContext,
                                 adType = AdType.INTERSTITIAL,
-                                adIdReferenceName = adIdReferenceName
+                                adIdReferenceName = adIdReferenceName,
+                                errorCode = p0.code,
+                                errorMessage = p0.message
                             )
+                            scheduleRetry(p0.code, adIdReferenceName, mContext)
 
                         }
                     })
@@ -492,10 +544,8 @@ class AdmobInterstitialAd {
         adIdReferenceName: String, mContext: Activity
     ) {
         try {
-            if (!AdSharedPreference.getInstance(mContext).isAppPurchased && InternetController.getInstance(
-                    mContext
-                ).isInternetConnected
-            ) {
+            if (canLoad(mContext)) {
+                dropExpiredAd()
                 if (admobInterAd != null) {
                     return
                 }
@@ -519,6 +569,7 @@ class AdmobInterstitialAd {
                             super.onAdLoaded(p0)
                             canRequestAd = true
                             admobInterAd = p0
+                            retryPolicy.reset()
 
                             AdClickDurationTracker.adRequestMatch(
                                 mContext,
@@ -532,10 +583,13 @@ class AdmobInterstitialAd {
                             AdClickDurationTracker.adRequestFail(
                                 mContext,
                                 adType = AdType.INTERSTITIAL,
-                                adIdReferenceName = adIdReferenceName
+                                adIdReferenceName = adIdReferenceName,
+                                errorCode = p0.code,
+                                errorMessage = p0.message
                             )
                             canRequestAd = true
                             admobInterAd = null
+                            scheduleRetry(p0.code, adIdReferenceName, mContext)
                         }
                     })
             } else {
@@ -588,6 +642,7 @@ class AdmobInterstitialAd {
     ) {
         mInterstitialControllerListener = interstitialControllerListener
         markTerminalPending()
+        dropExpiredAd()
         if (FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(activity).canRequestAds || AdSharedPreference.getInstance(
                 activity
             ).isAppPurchased || !enable || !InternetController.getInstance(activity).isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd
@@ -613,6 +668,7 @@ class AdmobInterstitialAd {
     ) {
         mInterstitialControllerListener = interstitialControllerListener
         markTerminalPending()
+        dropExpiredAd()
         if (FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(activity).canRequestAds || AdSharedPreference.getInstance(
                 activity
             ).isAppPurchased || !enable || !InternetController.getInstance(activity).isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd
@@ -639,6 +695,7 @@ class AdmobInterstitialAd {
     ) {
         mInterstitialControllerListener = interstitialControllerListener
         markTerminalPending()
+        dropExpiredAd()
         if (!isBackPressAdShow || FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(
                 activity
             ).canRequestAds || AdSharedPreference.getInstance(
@@ -663,6 +720,7 @@ class AdmobInterstitialAd {
     ) {
         mInterstitialControllerListener = interstitialControllerListener
         markTerminalPending()
+        dropExpiredAd()
         if (FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(activity).canRequestAds || AdSharedPreference.getInstance(
                 activity
             ).isAppPurchased || !enableAds || !InternetController.getInstance(activity).isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd
@@ -706,6 +764,7 @@ class AdmobInterstitialAd {
     ) {
         mInterstitialControllerListener = interstitialControllerListener
         markTerminalPending()
+        dropExpiredAd()
         if (FirebaseValue.ALL_ADS_OFF_ENABLE || !GoogleMobileAdsConsentManager.getInstance(activity).canRequestAds || AdSharedPreference.getInstance(
                 activity
             ).isAppPurchased || !enableAds || !InternetController.getInstance(activity).isInternetConnected || AdKeys.IS_APP_PAUSE || AdKeys.isShowingOpenAd
@@ -729,9 +788,10 @@ class AdmobInterstitialAd {
                     }, 1000)
                 }
             } else {
-                canRequestAd = true
-                admobInterAd = null
                 notifyAdClosedOnce()
+                if (FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
+                    loadAd(adIdString, activity)
+                }
             }
 
         }
@@ -769,6 +829,9 @@ class AdmobInterstitialAd {
                     loadAd(adIdString, activity)
                 } else {
                     mInterstitialControllerListener?.onAdClosed()
+                    // The preload failed or expired: start the next one now so the following
+                    // eligible tap has an ad.
+                    loadAd(adIdString, activity)
                 }
             }
         } else {
@@ -806,6 +869,9 @@ class AdmobInterstitialAd {
                     loadAd(adIdString, activity)
                 } else {
                     mInterstitialControllerListener?.onAdClosed()
+                    // The preload failed or expired: start the next one now so the following
+                    // eligible tap has an ad.
+                    loadAd(adIdString, activity)
                 }
             }
         } else {
@@ -895,12 +961,29 @@ class AdmobInterstitialAd {
     ) {
         android15Support()
         adLoadingDialog?.dismissAlertDialog()
+        // Placement the ad is shown at (the splash passes ""), used for events and the next preload.
+        val placement = adIdString.ifEmpty { adIdReference }
+        val appContext = activity.applicationContext
 
+        admobInterAd?.let { ad ->
+            ad.setOnPaidEventListener { value ->
+                AdClickDurationTracker.adPaidEvent(
+                    appContext, AdType.INTERSTITIAL, placement, value, ad.responseInfo
+                )
+            }
+        }
         admobInterAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdClicked() {
                 super.onAdClicked()
                 AdClickDurationTracker.startTracking(
-                    activity, adType = AdType.INTERSTITIAL, adIdReferenceName = adIdReference
+                    activity, adType = AdType.INTERSTITIAL, adIdReferenceName = placement
+                )
+            }
+
+            override fun onAdImpression() {
+                super.onAdImpression()
+                AdClickDurationTracker.adImpression(
+                    appContext, adType = AdType.INTERSTITIAL, adIdReferenceName = placement
                 )
             }
 
@@ -915,13 +998,14 @@ class AdmobInterstitialAd {
                     mInterstitialControllerListener?.onIapShow()
                 }
                 if (FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
-                    loadAd(adIdString, activity)
+                    loadAd(placement, activity)
                 }
             }
 
             override fun onAdShowedFullScreenContent() {
                 super.onAdShowedFullScreenContent()
                 FirebaseValue.IS_INTER_SHOWING = true
+                splashWindowOpen = false
                 mInterstitialControllerListener?.onSplashAdViewGone()
                 adLoadingDialog?.dismissAlertDialog()
                 admobInterAd = null
@@ -929,15 +1013,19 @@ class AdmobInterstitialAd {
 
             override fun onAdFailedToShowFullScreenContent(p0: AdError) {
                 super.onAdFailedToShowFullScreenContent(p0)
-                AdClickDurationTracker.adRequestFail(
-                    activity, adType = AdType.INTERSTITIAL, adIdReferenceName = adIdReference
+                AdClickDurationTracker.adShowFail(
+                    appContext,
+                    adType = AdType.INTERSTITIAL,
+                    adIdReferenceName = placement,
+                    errorCode = p0.code,
+                    errorMessage = p0.message
                 )
                 admobInterAd = null
                 FirebaseValue.IS_INTER_SHOWING = false
                 adLoadingDialog?.dismissAlertDialog()
                 notifyAdClosedOnce()
                 if (FirebaseValue.INTERSTITIAL_PRE_LOAD_ENABLE) {
-                    loadAd(adIdString, activity)
+                    loadAd(placement, activity)
                 }
             }
         }

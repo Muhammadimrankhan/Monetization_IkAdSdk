@@ -64,10 +64,4 @@ class BannerAdViewModel(
             AdmobBannerAd.getInstance().cancelPending(onFailed)
         }
     }
-
-    override fun onCleared() {
-        // Also drops whatever the collapsible class may still be holding as a preload.
-        if (collapsible) AdmobCollapsibleBannerAd.getInstance().destroy()
-        super.onCleared()
-    }
 }
