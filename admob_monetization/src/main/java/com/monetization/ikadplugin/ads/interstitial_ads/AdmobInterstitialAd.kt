@@ -16,6 +16,7 @@ import com.monetization.ikadplugin.ads.AdKeys.iapScreenShow
 import com.monetization.ikadplugin.ads.AdLoadingDialog
 import com.monetization.ikadplugin.ads.FirebaseValue
 import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
+import com.monetization.ikadplugin.ads_duration_tracker.AdRevenueTracker
 import com.monetization.ikadplugin.ads_duration_tracker.AdType
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
@@ -897,6 +898,11 @@ class AdmobInterstitialAd {
         android15Support()
         adLoadingDialog?.dismissAlertDialog()
 
+        admobInterAd?.let { ad ->
+            ad.onPaidEventListener = AdRevenueTracker.paidEventListener(
+                activity, AdType.INTERSTITIAL, adIdReference, ad.adUnitId
+            ) { ad.responseInfo }
+        }
         admobInterAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdClicked() {
                 super.onAdClicked()

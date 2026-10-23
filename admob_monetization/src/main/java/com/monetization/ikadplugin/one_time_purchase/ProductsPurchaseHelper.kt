@@ -184,10 +184,13 @@ class ProductsPurchaseHelper : PurchasesUpdatedListener {
                     override fun onQueryPurchasesResponse(
                         p0: BillingResult, p1: MutableList<Purchase>
                     ) {
-                        if (p0.responseCode == BillingClient.BillingResponseCode.OK) {
-                            if (isProductPurchase(p1)) {
-                                return
-                            }
+                        if (p0.responseCode != BillingClient.BillingResponseCode.OK) {
+                            // A failed query says nothing about ownership: keep the cached state.
+                            queryProductSkuForPurchase()
+                            return
+                        }
+                        if (isProductPurchase(p1)) {
+                            return
                         }
                         appNotPurchased()
                         queryProductSkuForPurchase()
@@ -267,7 +270,8 @@ class ProductsPurchaseHelper : PurchasesUpdatedListener {
                 billingClient =
                     BillingClient.newBuilder(context).setListener(this).enablePendingPurchases(
                         PendingPurchasesParams.newBuilder().enableOneTimeProducts().build()
-                    ).build()
+                    ).enableAutoServiceReconnection()          // Billing 8+
+             .build()
             }
             setupConnection()
         } catch (_: Exception) {

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tag key: the NativeAd shown in a NativeAdView, so it can be destroyed with its view. -->
+    <item name="ik_native_ad" type="id" />
+</resources>

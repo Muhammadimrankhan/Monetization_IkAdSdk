@@ -1,7 +1,9 @@
 package com.monetization.ikadplugin.compose
 
 import android.app.Activity
+import android.view.View
 import com.google.android.gms.ads.nativead.NativeAdView
+import com.monetization.ikadplugin.ads.NativeViewPopulate
 import com.monetization.ikadplugin.ads.native_ads.AdmobNativeAd
 
 /**
@@ -38,5 +40,9 @@ class NativeAdViewModel(
                 nativeCtaColorAdPosition = nativeCtaColorAdPosition,
             )
         }
+    }
+
+    override fun destroyAdView(adView: View) {
+        (adView as? NativeAdView)?.let(NativeViewPopulate::destroyNativeAdView)
     }
 }

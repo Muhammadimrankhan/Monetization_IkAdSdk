@@ -1153,6 +1153,31 @@ AdClickDurationTracker.startTracking(context, AdType.NATIVE, adIdReferenceName =
 AdClickDurationTracker.reset()
 ```
 
+### Ad revenue (impression-level)
+
+Every ad the SDK shows (interstitial, rewarded interstitial, app open, banner, collapsible banner,
+native) reports AdMob's `OnPaidEventListener` value. Each paid impression is logged as
+`ad_paid_revenue` with `ad_type`, `ad_id_ref`, `ad_unit_name`, `ad_source`, `value`, `currency` and
+`precision_type`. Banners report one event per refresh.
+
+The standard `ad_impression` event is **off by default**. When your AdMob app is linked to Firebase,
+Analytics already logs `ad_impression` with revenue automatically, and logging it again would double
+count. Turn it on only when AdMob is not linked:
+
+```kotlin
+AdRevenueTracker.logStandardAdImpression = true
+```
+
+To forward revenue to another tool (Adjust, AppsFlyer, your backend), set a listener once, for
+example in `Application.onCreate()`:
+
+```kotlin
+AdRevenueTracker.listener = AdRevenueListener { event ->
+    // event.adType, event.placement, event.adUnitId, event.adSourceName
+    // event.valueMicros / event.value, event.currencyCode, event.precisionType
+}
+```
+
 ---
 
 ## Full API reference

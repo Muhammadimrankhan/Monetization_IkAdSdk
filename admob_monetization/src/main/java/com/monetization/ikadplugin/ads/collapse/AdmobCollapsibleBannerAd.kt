@@ -24,6 +24,7 @@ import com.monetization.ikadplugin.pref.AdSharedPreference
 import com.monetization.ikadplugin.BuildConfig
 import com.monetization.ikadplugin.ads.NativeShimmerEffect.addShimmerLayout
 import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
+import com.monetization.ikadplugin.ads_duration_tracker.AdRevenueTracker
 import com.monetization.ikadplugin.ads_duration_tracker.AdType
 
 class AdmobCollapsibleBannerAd {
@@ -109,6 +110,9 @@ class AdmobCollapsibleBannerAd {
                 val adView = AdView(activity)
                 adView.adUnitId = adId
                 adView.setAdSize(getAdSize(activity))
+                adView.onPaidEventListener = AdRevenueTracker.paidEventListener(
+                    activity, AdType.BANNER, adReference, adId
+                ) { adView.responseInfo }
 
                 val extras = Bundle()
                 extras.putString("collapsible", "bottom")
@@ -232,6 +236,9 @@ class AdmobCollapsibleBannerAd {
             val adView = AdView(activity)
             adView.adUnitId = adId
             adView.setAdSize(getAdSize(activity))
+            adView.onPaidEventListener = AdRevenueTracker.paidEventListener(
+                activity, AdType.BANNER, adReference, adId
+            ) { adView.responseInfo }
 
             val extras = Bundle()
             extras.putString("collapsible", "bottom")

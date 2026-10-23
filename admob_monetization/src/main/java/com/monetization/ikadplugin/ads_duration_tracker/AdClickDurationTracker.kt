@@ -22,6 +22,7 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
     private const val EVENT_AD_REQUEST_MATCH = "ad_request_Loaded"
     private const val EVENT_AD_USER_EARN_REWARDED = "user_earn_rewarded_value"
     private const val EVENT_AD_SHOW = "ad_show"
+    private const val EVENT_AD_PAID_REVENUE = "ad_paid_revenue"
 
     private const val PARAM_AD_TYPE = "ad_type"
     private const val PARAM_AD_ID_REF = "ad_id_ref"
@@ -314,6 +315,47 @@ object AdClickDurationTracker : Application.ActivityLifecycleCallbacks {
                     putInt("rewardAmount", rewardAmount)
                 }
             )
+        }
+    }
+
+    fun adRevenue(
+        context: Context,
+        event: AdRevenueEvent,
+        logStandardAdImpression: Boolean
+    ) {
+        if (isDebug) {
+            Toast.makeText(
+                context,
+                "$EVENT_AD_PAID_REVENUE\nAd Type: ${event.adType.firebaseName}\nAd Ref: ${event.placement}" +
+                        "\nValue: ${event.value} ${event.currencyCode}\nSource: ${event.adSourceName}",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            firebaseAnalytics?.logEvent(
+                EVENT_AD_PAID_REVENUE,
+                Bundle().apply {
+                    putString(PARAM_AD_TYPE, event.adType.firebaseName)
+                    putString(PARAM_AD_ID_REF, event.placement)
+                    putString(FirebaseAnalytics.Param.AD_UNIT_NAME, event.adUnitId)
+                    putString(FirebaseAnalytics.Param.AD_SOURCE, event.adSourceName)
+                    putDouble(FirebaseAnalytics.Param.VALUE, event.value)
+                    putString(FirebaseAnalytics.Param.CURRENCY, event.currencyCode)
+                    putLong("precision_type", event.precisionType.toLong())
+                }
+            )
+            if (logStandardAdImpression) {
+                firebaseAnalytics?.logEvent(
+                    FirebaseAnalytics.Event.AD_IMPRESSION,
+                    Bundle().apply {
+                        putString(FirebaseAnalytics.Param.AD_PLATFORM, "admob")
+                        putString(FirebaseAnalytics.Param.AD_SOURCE, event.adSourceName)
+                        putString(FirebaseAnalytics.Param.AD_FORMAT, event.adType.firebaseName)
+                        putString(FirebaseAnalytics.Param.AD_UNIT_NAME, event.adUnitId)
+                        putDouble(FirebaseAnalytics.Param.VALUE, event.value)
+                        putString(FirebaseAnalytics.Param.CURRENCY, event.currencyCode)
+                    }
+                )
+            }
         }
     }
 

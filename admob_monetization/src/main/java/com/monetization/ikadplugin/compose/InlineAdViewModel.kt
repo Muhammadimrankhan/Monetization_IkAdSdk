@@ -132,6 +132,7 @@ abstract class InlineAdViewModel internal constructor(
             return
         }
 
+        findAdView(frame, adViewClass)?.let(::destroyAdView)
         frame.removeAllViews()
         frame.visibility = View.VISIBLE
         _state.value = AdSlotState.Loading

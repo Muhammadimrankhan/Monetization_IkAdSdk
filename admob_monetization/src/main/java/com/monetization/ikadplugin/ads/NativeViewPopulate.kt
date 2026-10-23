@@ -2,6 +2,7 @@ package com.monetization.ikadplugin.ads
 
 import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
@@ -15,6 +16,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.graphics.toColorInt
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.nativead.MediaView
 import com.google.android.gms.ads.nativead.NativeAd
@@ -130,6 +133,52 @@ object NativeViewPopulate {
             adView.iconView?.visibility = View.VISIBLE
         }
         adView.setNativeAd(nativeAd)
+        adView.setTag(R.id.ik_native_ad, nativeAd)
+    }
+
+    internal fun Context.findActivity(): Activity? {
+        var current: Context? = this
+        while (current is ContextWrapper) {
+            if (current is Activity) return current
+            current = current.baseContext
+        }
+        return null
+    }
+
+    /** Destroys the [NativeAd] shown in [adView] (if any) and the view itself. Safe to call twice. */
+    internal fun destroyNativeAdView(adView: NativeAdView) {
+        try {
+            (adView.getTag(R.id.ik_native_ad) as? NativeAd)?.destroy()
+            adView.setTag(R.id.ik_native_ad, null)
+            adView.destroy()
+        } catch (_: Exception) {
+        }
+    }
+
+    /** Destroys every native ad inside [root]. Call before removing an ad frame's children. */
+    internal fun destroyNativeAdsIn(root: View?) {
+        when (root) {
+            is NativeAdView -> destroyNativeAdView(root)
+            is ViewGroup -> for (i in 0 until root.childCount) {
+                destroyNativeAdsIn(root.getChildAt(i))
+            }
+        }
+    }
+
+    /** Empties an ad frame, destroying any native ad it was showing. */
+    internal fun clearAdFrame(frame: ViewGroup) {
+        destroyNativeAdsIn(frame)
+        frame.removeAllViews()
+    }
+
+    /** Destroys [adView]'s ad when the screen it is shown on is destroyed. */
+    private fun destroyWithScreen(context: Context, adView: NativeAdView) {
+        val owner = context.findActivity() as? LifecycleOwner ?: return
+        owner.lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onDestroy(owner: LifecycleOwner) {
+                destroyNativeAdView(adView)
+            }
+        })
     }
 
     fun addLargeNativeView(
@@ -178,19 +227,22 @@ object NativeViewPopulate {
             }
         }
 
+        val nativeAdView = adView.findViewById<NativeAdView>(R.id.ad_view)
         populateUnifiedNativeAdView(
             ad,
-            adView.findViewById(R.id.ad_view),
+            nativeAdView,
             adViewType,
             nativeCtaColorAdPosition
         )
 
         adFrame.visibility = View.VISIBLE
         try {
+            destroyNativeAdsIn(adFrame)
             adFrame.removeAllViews()
         } catch (_: Exception) {
         }
         adFrame.addView(adView)
+        destroyWithScreen(context, nativeAdView)
     }
 
     fun getAdSize(activity: Activity): AdSize {

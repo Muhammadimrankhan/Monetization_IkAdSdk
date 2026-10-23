@@ -66,6 +66,7 @@ object IkAdSdk {
         SubscriptionHelper.getInstance()
     }
 
+
     val openAppAdController by lazy {
         AdmobOpenAppAd.getInstance()
     }

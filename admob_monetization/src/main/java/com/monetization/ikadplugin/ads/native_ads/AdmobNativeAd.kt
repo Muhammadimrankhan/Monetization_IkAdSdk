@@ -12,12 +12,14 @@ import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdOptions
 import com.monetization.ikadplugin.ads.FirebaseValue
 import com.monetization.ikadplugin.ads.NativeViewPopulate
+import com.monetization.ikadplugin.ads.NativeViewPopulate.findActivity
 import com.monetization.ikadplugin.consent_sdk.GoogleMobileAdsConsentManager
 import com.monetization.ikadplugin.firebase_value_fetch.FetchConfig
 import com.monetization.ikadplugin.internetController.InternetController
 import com.monetization.ikadplugin.pref.AdSharedPreference
 import com.monetization.ikadplugin.ads.NativeShimmerEffect.addShimmerLayout
 import com.monetization.ikadplugin.ads_duration_tracker.AdClickDurationTracker
+import com.monetization.ikadplugin.ads_duration_tracker.AdRevenueTracker
 import com.monetization.ikadplugin.ads_duration_tracker.AdType
 
 class AdmobNativeAd {
@@ -37,8 +39,17 @@ class AdmobNativeAd {
     private var canRequestAd = true
     private var largeAndSmallNativeAd: NativeAd? = null
 
+    /**
+     * Drops the cached reference once the ad has been handed to a view. The ad itself is destroyed
+     * later by [NativeViewPopulate], when its view is replaced or its screen is destroyed.
+     */
     private fun clearNativeAd() {
         largeAndSmallNativeAd = null
+    }
+
+    private fun isScreenGone(context: Context): Boolean {
+        val activity = context.findActivity() ?: return false
+        return activity.isFinishing || activity.isDestroyed
     }
 
      fun onDestroyNativeAd(context: Context) {
@@ -90,6 +101,11 @@ class AdmobNativeAd {
                     )
                     builder.forNativeAd { newNativeAd: NativeAd ->
                         canRequestAd = true
+                        newNativeAd.setOnPaidEventListener(
+                            AdRevenueTracker.paidEventListener(
+                                context, AdType.NATIVE, adIdNativeReference, adId
+                            ) { newNativeAd.responseInfo }
+                        )
                         largeAndSmallNativeAd = newNativeAd
                         AdClickDurationTracker.adRequestMatch(context,
                             adType = AdType.NATIVE,
@@ -183,7 +199,7 @@ class AdmobNativeAd {
                             placement = adIdNativeReference,
                             message = "Native populate failed: ${e.message}"
                         )
-                        adFrame.removeAllViews()
+                        NativeViewPopulate.clearAdFrame(adFrame)
                         adFrame.visibility = View.GONE
                     }
                 }
@@ -237,6 +253,16 @@ class AdmobNativeAd {
                     )
                     builder.forNativeAd { newNativeAd: NativeAd ->
                         canRequestAd = true
+//                        if (isScreenGone(context)) {
+//                            // Loaded after the screen closed: there is no view to show it in.
+//                            newNativeAd.destroy()
+//                            return@forNativeAd
+//                        }
+                        newNativeAd.setOnPaidEventListener(
+                            AdRevenueTracker.paidEventListener(
+                                context, AdType.NATIVE, adIdNativeReference, adId
+                            ) { newNativeAd.responseInfo }
+                        )
                         largeAndSmallNativeAd = newNativeAd
                         AdClickDurationTracker.adRequestMatch(context,
                             adType = AdType.NATIVE,
@@ -289,7 +315,7 @@ class AdmobNativeAd {
 
                             canRequestAd = true
                             clearNativeAd()
-                            adLayout.removeAllViews()
+                            NativeViewPopulate.clearAdFrame(adLayout)
                             adLayout.visibility = View.GONE
                         }
                     }).build()
@@ -321,7 +347,7 @@ class AdmobNativeAd {
                     }
                 }
             } else {
-                adLayout.removeAllViews()
+                NativeViewPopulate.clearAdFrame(adLayout)
                 adLayout.visibility = View.GONE
             }
         } catch (e: Exception) {
@@ -332,7 +358,7 @@ class AdmobNativeAd {
                 throwable = e,
                 message = "Native load-and-show flow failed."
             )
-            adLayout.removeAllViews()
+            NativeViewPopulate.clearAdFrame(adLayout)
             adLayout.visibility = View.GONE
         }
     }
@@ -414,11 +440,11 @@ class AdmobNativeAd {
                     )
                 }
             } else {
-                adFrame.removeAllViews()
+                NativeViewPopulate.clearAdFrame(adFrame)
                 adFrame.visibility = View.GONE
             }
         } catch (e: Exception) {
-            adFrame.removeAllViews()
+            NativeViewPopulate.clearAdFrame(adFrame)
             adFrame.visibility = View.GONE
         }
     }
@@ -463,6 +489,11 @@ class AdmobNativeAd {
 
                 builder.forNativeAd { newNativeAd: NativeAd ->
                     canRequestAd = true
+                    newNativeAd.setOnPaidEventListener(
+                        AdRevenueTracker.paidEventListener(
+                            context, AdType.NATIVE, adIdNativeReference, adId
+                        ) { newNativeAd.responseInfo }
+                    )
                     largeAndSmallNativeAd = newNativeAd
                     AdClickDurationTracker.adRequestMatch(context,
                         adType = AdType.NATIVE,
@@ -519,7 +550,7 @@ class AdmobNativeAd {
                         )
                         canRequestAd = true
                         clearNativeAd()
-                        adLayout.removeAllViews()
+                        NativeViewPopulate.clearAdFrame(adLayout)
                         adLayout.visibility = View.GONE
                     }
                 }).build()
@@ -527,11 +558,11 @@ class AdmobNativeAd {
                 adLoader.loadAd(AdRequest.Builder().build())
 
             } else {
-                adLayout.removeAllViews()
+                NativeViewPopulate.clearAdFrame(adLayout)
                 adLayout.visibility = View.GONE
             }
         } catch (e: Exception) {
-            adLayout.removeAllViews()
+            NativeViewPopulate.clearAdFrame(adLayout)
             adLayout.visibility = View.GONE
         }
     }
